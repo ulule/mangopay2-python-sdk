@@ -228,40 +228,35 @@ class APIRequest(object):
         return '%s%s' % (self.client_id, relative_url)
 
     def _create_apierror(self, result, url=None, data=None, method=None):
-        text = result.text if hasattr(result, 'text') else result.content
+        text = result.text if hasattr(result, "text") else result.content
 
         status_code = result.status_code
 
         headers = result.headers
+        try:
+            content = result.json()
+        except ValueError:
+            content = None
 
         errors = None
-        if "errors" in text:
-            errors = text["errors"]
+        if "errors" in content:
+            errors = content["errors"]
 
-        logger.error('API ERROR: status_code: %s | url: %s | method: %s | data: %r | headers: %s | content: %s' % (
-            status_code,
-            url,
-            method,
-            data,
-            headers,
-            text,
+        logger.error(
+            "API ERROR: status_code: %s | url: %s | method: %s | data: %r | headers: %s | content: %s"
+            % (status_code, url, method, data, headers, text),
             extra={
                 "status_code": status_code,
                 "url": url,
                 "method": method,
                 "data": data,
                 "errors": errors,
-            }
-        ))
+            },
+        )
 
         request_error.send(url=url, status_code=status_code, headers=headers)
 
-        try:
-            content = result.json()
-        except ValueError:
-            content = None
-
-        raise APIError(text, code=status_code, content=content, headers=headers)
+        raise APIError(text, code=status_code, content=content)
 
     def _create_decodeerror(self, result, url=None):
 
