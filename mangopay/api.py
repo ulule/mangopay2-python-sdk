@@ -179,13 +179,24 @@ class APIRequest(object):
 
         headers = result.headers
 
+        errors = None
+        if "errors" in text:
+            errors = text["errors"]
+
         logger.error('API ERROR: status_code: %s | url: %s | method: %s | data: %r | headers: %s | content: %s' % (
             status_code,
             url,
             method,
             data,
             headers,
-            text
+            text,
+            extra={
+                "status_code": status_code,
+                "url": url,
+                "method": method,
+                "data": data,
+                "errors": errors,
+            }
         ))
 
         request_error.send(url=url, status_code=status_code, headers=headers)
