@@ -94,7 +94,12 @@ class APIRequest(object):
         ts = time.time()
 
         # signal:
-        request_started.send(url=url, data=truncated_data, headers=headers, method=method)
+        request_started.send(
+            url=url,
+            data=truncated_data,
+            headers=headers,
+            method=method,
+            client_id=self.client_id)
 
         try:
             result = requests_session.request(method, url,
@@ -216,7 +221,11 @@ class APIRequest(object):
                                                                                     headers,
                                                                                     text))
 
-        request_error.send(url=url, status_code=status_code, headers=headers)
+        request_error.send(
+            url=url,
+            status_code=status_code,
+            headers=headers,
+            client_id=self.client_id)
 
         try:
             content = result.json()
