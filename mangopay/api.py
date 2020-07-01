@@ -143,7 +143,8 @@ class APIRequest(object):
                               headers=headers,
                               method=method,
                               result=result,
-                              laps=laps)
+                              laps=laps,
+                              client_id=self.client_id)
 
         logger.debug('DATA[OUT -> %s][%2.3f seconds]\n\t- status_code: %s\n\t- headers: %s\n\t- content: %s',
             url,
