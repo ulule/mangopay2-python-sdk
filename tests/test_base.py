@@ -256,6 +256,8 @@ class BaseTestLive(unittest.TestCase):
     _ubo_declaration = None
     _ubo = None
 
+    _client_account = None
+
     def setUp(self):
         BaseTestLive.get_john()
         BaseTestLive.get_user_legal()
@@ -304,9 +306,10 @@ class BaseTestLive(unittest.TestCase):
                 "first_name": "Victor",
                 "last_name": "Hugo",
                 "address": address,
-                "birthday": 1231432,
+                "birthday": date(1970, 1, 15),
                 "nationality": "FR",
-                "birthplace": Birthplace(city='Paris', country='FR')
+                "birthplace": Birthplace(city='Paris', country='FR'),
+                "isActive": True
             }
             BaseTestLive._ubo = Ubo.create(**params)
         return BaseTestLive._ubo
@@ -333,6 +336,30 @@ class BaseTestLive(unittest.TestCase):
             account.bic = 'CMBRFR2BCME'
             BaseTestLive._johns_account = BankAccount(**account.save())
         return BaseTestLive._johns_account
+
+    @staticmethod
+    def get_client_bank_account(recreate=False):
+        if BaseTestLive._client_account is None or recreate:
+            account = BankAccount()
+            account.owner_name = 'Joe Blogs'
+            account.type = 'IBAN'
+
+            account.owner_address = Address()
+            account.owner_address.address_line_1 = "Main Street"
+            account.owner_address.address_line_2 = "no. 5 ap. 6"
+            account.owner_address.country = "FR"
+            account.owner_address.city = "Lyon"
+            account.owner_address.postal_code = "65400"
+
+            account.iban = 'FR7630004000031234567890143'
+            account.bic = 'CRLYFRPP'
+            account.tag = 'custom meta'
+
+            account.create_client_bank_account()
+
+            BaseTestLive._client_account = BankAccount(**account.create_client_bank_account())
+
+        return BaseTestLive._client_account
 
     @staticmethod
     def get_john(recreate=False):
@@ -458,3 +485,20 @@ class BaseTestLive(unittest.TestCase):
     @staticmethod
     def get_oauth_manager():
         return BaseTestLive._oauth_manager
+
+    def test_handler(self):
+        api_url = "test_api_url"
+        sandbox_url = "test_sandbox_url"
+
+        sandbox_handler = APIRequest(
+            api_sandbox_url=sandbox_url,
+            api_url=api_url,
+            sandbox=True)
+
+        non_sandbox_handler = APIRequest(
+            api_sandbox_url=sandbox_url,
+            api_url=api_url,
+            sandbox=False)
+
+        self.assertEqual(api_url, non_sandbox_handler.api_url)
+        self.assertEqual(sandbox_url, sandbox_handler.api_url)

@@ -45,6 +45,7 @@ class PayOutsTest(BaseTest):
                     "Id": 30047,
                     "CreditedFunds": None,
                     "BankWireRef": "John Doe's trousers",
+                    "PayoutModeRequested": "INSTANT_PAYMENT",
                     "DebitedFunds": {"Currency": "EUR", "Amount": 1000},
                     "BankAccountId": 6784645,
                     "AuthorId": 6784642,
@@ -82,7 +83,8 @@ class PayOutsTest(BaseTest):
                     "Nature": "NORMAL",
                     "DebitedWalletId": "30025",
                     "BankAccountId": "30027",
-                    "BankWireRef": "John Doe's trousers"
+                    "BankWireRef": "John Doe's trousers",
+                    "PayoutModeRequested": "INSTANT_PAYMENT"
                 },
                 'status': 200
             }])
@@ -115,7 +117,7 @@ class PayOutsTest(BaseTest):
         self.assertIsNone(bank_wire_payout.get_pk())
         bank_wire_payout.save()
         self.assertIsInstance(bank_wire_payout, BankWirePayOut)
-
+        self.assertEqual(bankaccount, bank_wire_payout.bank_account)
         self.assertEqual(bank_wire_payout.debited_funds.amount, 1000)
         bank_wire_payout_params.pop('debited_funds')
 
@@ -126,10 +128,8 @@ class PayOutsTest(BaseTest):
             self.assertEqual(getattr(bank_wire_payout, key), value)
 
         self.assertIsNotNone(bank_wire_payout.get_pk())
-
         # test_retrieve_payouts
         retrieved_payout = BankWirePayOut.get(bank_wire_payout.get_pk())
-
         self.assertIsNotNone(retrieved_payout.get_pk())
         self.assertIsInstance(retrieved_payout, BankWirePayOut)
 
