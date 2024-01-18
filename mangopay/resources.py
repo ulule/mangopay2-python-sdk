@@ -14,7 +14,7 @@ from .fields import (PrimaryKeyField, EmailField, CharField,
                      ReportWalletsFiltersField, BillingField, SecurityInfoField, PlatformCategorizationField,
                      BirthplaceField, ApplepayPaymentDataField, GooglepayPaymentDataField, ScopeBlockedField,
                      BrowserInfoField, ShippingField, CurrentStateField, FallbackReasonField, InstantPayoutField,
-                     CountryAuthorizationDataField, PayinsLinkedField)
+                     CountryAuthorizationDataField, PayinsLinkedField, ConversionRateField, CardInfoField)
 from .query import InsertQuery, UpdateQuery, SelectQuery, ActionQuery
 
 
@@ -266,6 +266,66 @@ class Wallet(BaseModel):
 
 
 @python_2_unicode_compatible
+class ConversionRate(BaseModel):
+    debited_currency = CharField(api_name='DebitedCurrency', required=True)
+    credited_currency = CharField(api_name='CreditedCurrency', required=True)
+    client_rate = CharField(api_name='ClientRate')
+    market_rate = CharField(api_name='MarketRate')
+
+    def get_conversion_rate(self, *args, **kwargs):
+        kwargs['debited_currency'] = self.debited_currency
+        kwargs['credited_currency'] = self.credited_currency
+        select = SelectQuery(ConversionRate, *args, **kwargs)
+        select.identifier = 'GET_CONVERSION_RATE'
+        return select.all(*args, **kwargs)
+
+    class Meta:
+        verbose_name = 'conversion_rate'
+        verbose_name_plural = 'conversion_rates'
+        url = {
+            'GET_CONVERSION_RATE': '/conversion/rate/%(debited_currency)s/%(credited_currency)s'
+        }
+
+
+@python_2_unicode_compatible
+class InstantConversion(BaseModel):
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_wallet = ForeignKeyField(Wallet, api_name='DebitedWalletId', required=True)
+    credited_wallet = ForeignKeyField(Wallet, api_name='CreditedWalletId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    credited_funds = MoneyField(api_name='CreditedFunds', required=True)
+    conversion_rate = ConversionRateField(api_name='ConversionRate')
+    type = CharField(api_name='Type', choices=constants.TRANSACTION_TYPE_CHOICES, default=None)
+    nature = CharField(api_name='Nature', choices=constants.NATURE_CHOICES, default=None)
+    creation_date = DateTimeField(api_name='CreationDate')
+    result_code = CharField(api_name='ResultCode')
+    result_message = CharField(api_name='ResultMessage')
+    status = CharField(api_name='Status', choices=constants.STATUS_CHOICES, default=None)
+    execution_date = DateTimeField(api_name='ExecutionDate')
+
+    def create_instant_conversion(self, **kwargs):
+        insert = InsertQuery(self, **kwargs)
+        insert.insert_query = self.get_field_dict()
+        insert.identifier = 'CREATE_INSTANT_CONVERSION'
+        return insert.execute()
+
+    @staticmethod
+    def get_instant_conversion(id, *args, **kwargs):
+        kwargs['id'] = id
+        select = SelectQuery(InstantConversion, *args, **kwargs)
+        select.identifier = 'GET_INSTANT_CONVERSION'
+        return select.all(*args, **kwargs)
+
+    class Meta:
+        verbose_name = 'instant_conversion'
+        verbose_name_plural = 'instant_conversions'
+        url = {
+            'CREATE_INSTANT_CONVERSION': '/instant-conversion',
+            'GET_INSTANT_CONVERSION': '/instant-conversion/%(id)s'
+        }
+
+
+@python_2_unicode_compatible
 class Transfer(BaseModel):
     author = ForeignKeyField(User, api_name='AuthorId', required=True)
     credited_user = ForeignKeyField(User, api_name='CreditedUserId', required=True, related_name='credited_users')
@@ -336,23 +396,51 @@ class Card(BaseModel):
         select.identifier = 'CARD_GET_TRANSACTIONS'
         return select.all(*args, **kwargs)
 
-    def validate(self, *args, **kwargs):
-        kwargs['id'] = self.id
-        insert = InsertQuery(self, **kwargs)
-        insert.identifier = 'CARD_VALIDATE'
-        return insert.execute()
-
     class Meta:
         verbose_name = 'card'
         verbose_name_plural = 'cards'
         url = {
             SelectQuery.identifier: '/cards',
             UpdateQuery.identifier: '/cards',
-            'CARDS_FOR_FINGERPRINT': '/cards/fingerprints/%(fingerprint)s',
-            'CARD_VALIDATE': '/cards/%(id)s/validate'}
+            'CARDS_FOR_FINGERPRINT': '/cards/fingerprints/%(fingerprint)s'
+        }
 
     def __str__(self):
         return '%s of user %s' % (self.card_type, self.user_id)
+
+
+class CardValidation(BaseModel):
+    creation_date = DateTimeField(api_name='CreationDate')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    ip_address = CharField(api_name='IpAddress', required=True)
+    browser_info = BrowserInfoField(api_name='BrowserInfo', required=True)
+    secure_mode_return_url = CharField(api_name='SecureModeReturnURL', required=True)
+    secure_mode_redirect_url = CharField(api_name='SecureModeRedirectURL')
+    secure_mode_needed = BooleanField(api_name='SecureModeNeeded')
+    validity = CharField(api_name='Validity',
+                         choices=constants.VALIDITY_CHOICES,
+                         default=constants.VALIDITY_CHOICES.unknown)
+    type = CharField(api_name='Type', choices=constants.TRANSACTION_TYPE_CHOICES, default=None)
+    applied_3ds_version = CharField(api_name='Applied3DSVersion')
+    status = CharField(api_name='Status',
+                       choices=constants.STATUS_CHOICES,
+                       default=None)
+    result_code = CharField(api_name='ResultCode')
+    result_message = CharField(api_name='ResultMessage')
+
+    def validate(self, card_id, **kwargs):
+        insert = InsertQuery(self, **kwargs)
+        insert.insert_query = self.get_field_dict()
+        insert.insert_query['id'] = card_id
+        insert.identifier = 'CARD_VALIDATE'
+        return insert.execute()
+
+    class Meta:
+        verbose_name = 'card_validation'
+        verbose_name_plural = 'card_validations'
+        url = {
+            'CARD_VALIDATE': '/cards/%(id)s/validation'
+        }
 
 
 class CardRegistration(BaseModel):
@@ -476,7 +564,16 @@ class PayIn(BaseModel):
             ("BANK_WIRE", "DIRECT"): BankWirePayIn,
             ("BANK_WIRE", "EXTERNAL_INSTRUCTION"): BankWirePayInExternalInstruction,
             ("APPLEPAY", "DIRECT"): ApplepayPayIn,
-            ("GOOGLEPAY", "DIRECT"): GooglepayPayIn
+            ("GOOGLEPAY", "DIRECT"): GooglepayPayIn,
+            ("GOOGLE_PAY", "DIRECT"): GooglePayDirectPayIn,
+            ("MBWAY", "WEB"): MbwayPayIn,
+            ("PAYPAL", "WEB"): PayPalWebPayIn,
+            ("MULTIBANCO", "WEB"): MultibancoPayIn,
+            ("SATISPAY", "WEB"): SatispayPayIn,
+            ("BLIK", "WEB"): BlikPayIn,
+            ("KLARNA", "WEB"): KlarnaPayIn,
+            ("IDEAL", "WEB"): IdealPayIn,
+            ("GIROPAY", "WEB"): GiropayPayIn,
         }
 
         return types.get((payment_type, execution_type), cls)
@@ -537,11 +634,11 @@ class RecurringPayInCIT(PayIn):
     culture = CharField(api_name='Culture')
     secure_mode_needed = BooleanField(api_name='SecureModeNeeded')
     secure_mode = CharField(api_name='SecureMode',
-                            choices=constants.SECURE_MODE_CHOICES,
-                            default=constants.SECURE_MODE_CHOICES.default)
+                            choices=constants.SECURE_MODE_CHOICES)
     secure_mode_redirect_url = CharField(api_name='SecureModeRedirectURL')
     security_info = SecurityInfoField(api_name='SecurityInfo')
     shipping = ShippingField(api_name='Shipping')
+    card_info = CardInfoField(api_name='CardInfo')
 
     def get_read_only_properties(self):
         read_only = ["AuthorId", "Applied3DSVersion", "CardId", "CreationDate", "Culture", "SecureModeNeeded"
@@ -574,11 +671,11 @@ class RecurringPayInMIT(PayIn):
     culture = CharField(api_name='Culture')
     secure_mode_needed = BooleanField(api_name='SecureModeNeeded')
     secure_mode = CharField(api_name='SecureMode',
-                            choices=constants.SECURE_MODE_CHOICES,
-                            default=constants.SECURE_MODE_CHOICES.default)
+                            choices=constants.SECURE_MODE_CHOICES)
     secure_mode_redirect_url = CharField(api_name='SecureModeRedirectURL')
     security_info = SecurityInfoField(api_name='SecurityInfo')
     shipping = ShippingField(api_name='Shipping')
+    card_info = CardInfoField(api_name='CardInfo')
 
     def get_read_only_properties(self):
         read_only = ["AuthorId", "Applied3DSVersion", "CardId", "CreationDate", "Culture", "SecureModeNeeded"
@@ -618,6 +715,7 @@ class DirectPayIn(PayIn):
     shipping = ShippingField(api_name='Shipping')
     requested_3ds_version = CharField(api_name='Requested3DSVersion')
     applied_3ds_version = CharField(api_name='Applied3DSVersion')
+    card_info = CardInfoField(api_name='CardInfo')
 
     class Meta:
         verbose_name = 'payin'
@@ -694,6 +792,32 @@ class PayPalPayIn(PayIn):
 
 
 @python_2_unicode_compatible
+class PayPalWebPayIn(PayIn):
+    creation_date = DateTimeField(api_name='CreationDate')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    credited_wallet = ForeignKeyField(Wallet, api_name='CreditedWalletId', required=True)
+    return_url = CharField(api_name='ReturnURL', required=True)
+    redirect_url = CharField(api_name='RedirectURL')
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+    shipping = ShippingField(api_name='Shipping')
+    line_items = ListField(api_name='LineItems', required=True)
+    culture = CharField(api_name='Culture')
+    shipping_preference = CharField(api_name='ShippingPreference', choices=constants.SHIPPING_PREFERENCE_CHOICES,
+                                    default=None)
+    reference = CharField(api_name='Reference')
+
+    class Meta:
+        verbose_name = 'payin'
+        verbose_name_plural = 'payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/paypal',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+@python_2_unicode_compatible
 class PayconiqPayIn(PayIn):
     author = ForeignKeyField(User, api_name='AuthorId', required=True)
     debited_funds = MoneyField(api_name='DebitedFunds', required=True)
@@ -714,7 +838,7 @@ class PayconiqPayIn(PayIn):
 
 
 class ApplepayPayIn(PayIn):
-    tag = CharField(api_name='Applepay PayIn')
+    tag = CharField(api_name='Tag')
     author = ForeignKeyField(User, api_name='AuthorId', required=True)
     payment_data = ApplepayPaymentDataField(api_name='PaymentData', required=True)
     debited_funds = MoneyField(api_name='DebitedFunds', required=True)
@@ -730,7 +854,7 @@ class ApplepayPayIn(PayIn):
 
 
 class GooglepayPayIn(PayIn):
-    tag = CharField(api_name='Googlepay PayIn')
+    tag = CharField(api_name='Tag')
     author = ForeignKeyField(User, api_name='AuthorId', required=True)
     payment_type = GooglepayPaymentDataField(api_name='PaymentData', required=True)
     debited_funds = MoneyField(api_name='DebitedFunds', required=True)
@@ -742,6 +866,172 @@ class GooglepayPayIn(PayIn):
         verbose_name_plural = 'googlepay_payins'
         url = {
             InsertQuery.identifier: '/payins/googlepay/direct'
+        }
+
+
+class GooglePayDirectPayIn(PayIn):
+    tag = CharField(api_name='Tag')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    credited_wallet = ForeignKeyField(Wallet, api_name='CreditedWalletId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    secure_mode_return_url = CharField(api_name='SecureModeReturnURL', required=True)
+    secure_mode = CharField(api_name='SecureMode',
+                            choices=constants.SECURE_MODE_CHOICES,
+                            default=constants.SECURE_MODE_CHOICES.default)
+    ip_address = CharField(api_name='IpAddress', required=True)
+    browser_info = BrowserInfoField(api_name='BrowserInfo', required=True)
+    payment_data = CharField(api_name='PaymentData', required=True)
+    shipping = ShippingField(api_name='Shipping')
+    billing = BillingField(api_name='Billing')
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+
+    class Meta:
+        verbose_name = 'googlepay_direct_payin'
+        verbose_name_plural = 'googlepay_direct_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/googlepay',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class MbwayPayIn(PayIn):
+    creation_date = DateTimeField(api_name='CreationDate')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+    phone = CharField(api_name='Phone', required=True)
+
+    class Meta:
+        verbose_name = 'mbway_payin'
+        verbose_name_plural = 'mbway_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/mbway',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class MultibancoPayIn(PayIn):
+    creation_date = DateTimeField(api_name='CreationDate')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+    redirect_url = CharField(api_name='RedirectURL')
+    return_url = CharField(api_name='ReturnURL', required=True)
+
+    class Meta:
+        verbose_name = 'multibanco_payin'
+        verbose_name_plural = 'multibanco_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/multibanco',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class SatispayPayIn(PayIn):
+    creation_date = DateTimeField(api_name='CreationDate')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    return_url = CharField(api_name='ReturnURL', required=True)
+    redirect_url = CharField(api_name='RedirectURL')
+    country = CharField(api_name='Country', required=True)
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+
+    class Meta:
+        verbose_name = 'satispay_payin'
+        verbose_name_plural = 'satispay_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/satispay',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class BlikPayIn(PayIn):
+    creation_date = DateTimeField(api_name='CreationDate')
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+    return_url = CharField(api_name='ReturnURL', required=True)
+    redirect_url = CharField(api_name='RedirectURL')
+
+    class Meta:
+        verbose_name = 'blik_payin'
+        verbose_name_plural = 'blik_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/blik',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class KlarnaPayIn(PayIn):
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    return_url = CharField(api_name='ReturnURL', required=True)
+    line_items = ListField(api_name='LineItems', required=True)
+    country = CharField(api_name='Country', required=True)
+    phone = CharField(api_name='Phone', required=True)
+    email = EmailField(api_name='Email', required=True)
+    additional_data = CharField(api_name='AdditionalData', required=True)
+    billing = BillingField(api_name='Billing', required=True)
+    reference = CharField(api_name='Reference', required=True)
+    culture = CharField(api_name='Culture', required=True)
+    shipping = ShippingField(api_name='Shipping')
+    creation_date = DateTimeField(api_name='CreationDate')
+    credited_funds = MoneyField(api_name='CreditedFunds')
+    redirect_url = CharField(api_name='RedirectURL')
+    payment_method = CharField(api_name='PaymentMethod')
+
+    class Meta:
+        verbose_name = 'klarna_payin'
+        verbose_name_plural = 'klarna_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/klarna',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class IdealPayIn(PayIn):
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    credited_wallet = ForeignKeyField(Wallet, api_name='CreditedWalletId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    return_url = CharField(api_name='ReturnURL', required=True)
+    bic = CharField(api_name='Bic', choices=constants.BIC_CHOICES, required=True)
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+    creation_date = DateTimeField(api_name='CreationDate')
+    redirect_url = CharField(api_name='RedirectURL')
+    bank_name = CharField(api_name='BankName', choices=constants.BANK_NAME_CHOICES)
+
+    class Meta:
+        verbose_name = 'ideal_payin'
+        verbose_name_plural = 'ideal_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/ideal',
+            SelectQuery.identifier: '/payins'
+        }
+
+
+class GiropayPayIn(PayIn):
+    author = ForeignKeyField(User, api_name='AuthorId', required=True)
+    credited_wallet = ForeignKeyField(Wallet, api_name='CreditedWalletId', required=True)
+    debited_funds = MoneyField(api_name='DebitedFunds', required=True)
+    fees = MoneyField(api_name='Fees', required=True)
+    return_url = CharField(api_name='ReturnURL', required=True)
+    statement_descriptor = CharField(api_name='StatementDescriptor')
+    creation_date = DateTimeField(api_name='CreationDate')
+    redirect_url = CharField(api_name='RedirectURL')
+
+    class Meta:
+        verbose_name = 'giropay_payin'
+        verbose_name_plural = 'giropay_payins'
+        url = {
+            InsertQuery.identifier: '/payins/payment-methods/giropay',
+            SelectQuery.identifier: '/payins'
         }
 
 
@@ -760,6 +1050,8 @@ class CardWebPayIn(PayIn):
     debited_funds = MoneyField(api_name='DebitedFunds', required=True)
     fees = MoneyField(api_name='Fees', required=True)
     shipping = ShippingField(api_name='Shipping')
+    bic = CharField(api_name='Bic', choices=constants.BIC_CHOICES)
+    bank_name = CharField(api_name='BankName', choices=constants.BANK_NAME_CHOICES)
 
     class Meta:
         verbose_name = 'card_payin'
@@ -826,6 +1118,7 @@ class CardPreAuthorizedDepositPayIn(BaseModel):
     debited_funds = MoneyField(api_name='DebitedFunds')
     credited_funds = MoneyField(api_name='CreditedFunds')
     fees = MoneyField(api_name='Fees')
+    card_info = CardInfoField(api_name='CardInfo')
 
     class Meta:
         verbose_name = 'card_preauthorized_deposit_payin'
@@ -834,6 +1127,7 @@ class CardPreAuthorizedDepositPayIn(BaseModel):
             InsertQuery.identifier: '/payins/deposit-preauthorized/direct/full-capture',
             SelectQuery.identifier: '/payins'
         }
+
 
 class PreAuthorization(BaseModel):
     author = ForeignKeyField(User, api_name='AuthorId', required=True)
@@ -862,6 +1156,7 @@ class PreAuthorization(BaseModel):
     shipping = ShippingField(api_name='Shipping')
     requested_3ds_version = CharField(api_name='Requested3DSVersion')
     applied_3ds_version = CharField(api_name='Applied3DSVersion')
+    card_info = CardInfoField(api_name='CardInfo')
 
     def get_transactions(self, *args, **kwargs):
         kwargs['id'] = self.id
@@ -1066,6 +1361,7 @@ class Refund(BaseModel):
     initial_transaction_id = CharField(api_name='InitialTransactionId')
     initial_transaction_type = CharField(api_name='InitialTransactionType', choices=constants.TRANSACTION_TYPE_CHOICES,
                                          default=None)
+    reference = CharField(api_name='Reference')
 
     class Meta:
         verbose_name = 'refund'
@@ -1101,6 +1397,7 @@ class PayInRefund(Refund):
     debited_funds = MoneyField(api_name='DebitedFunds')
     fees = MoneyField(api_name='Fees')
     payin = ForeignKeyField(PayIn)
+    reference = CharField(api_name='Reference')
 
     class Meta:
         verbose_name = 'refund'

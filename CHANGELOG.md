@@ -1,3 +1,55 @@
+## [3.31.0] - 2023-12-22
+### Added
+
+- New `CardInfo` parameter returned on card transactions. More information [here](https://mangopay.com/docs/release-notes/chilka).
+- The IDEAL legacy implementation has been enhanced. You can now pass the `Bic`., and if provided, the API response will include the `BankName` parameter. More information [here](https://mangopay.com/docs/endpoints/web-card-payins#create-web-card-payin).
+
+## [3.30.1] - 2023-11-09
+### Added
+
+It's now possible to specify an amount for DebitedFunds and Fees when you create a refund with `PayInRefund()`.
+
+## [3.30.0] - 2023-11-02
+### Updated
+- Giropay and Ideal integrations with Mangopay have been improved.
+- Klarna param "MerchantOrderId" has been renamed to "Reference"
+
+### Added
+- New Reference parameter for the new Paypal implementation. 
+
+## [3.29.0] - 2023-09-29
+### Added
+- Instantly convert funds between 2 wallets of different currencies owned by the same user with the new SPOT FX endpoints
+
+## [3.28.0] - 2023-09-18
+### Added
+
+- Multibanco, Satispay, Blik, Klarna are now available as a payment method with Mangopay. This payment method is in private beta. Please contact support if you have any questions.
+- Card validation endpoint is now available (Private beta)
+
+### Updated
+
+- Google Pay integration & Paypal with Mangopay have been improved. These payment methods are in private beta. Please contact support if you have any questions.
+
+### Fixed
+
+- MBWay & PayPal are now using Web Execution Type.
+
+## [3.27.2] - 2023-07-28
+### Fixed
+
+CIT/MIT should not set secure_mode #332 
+
+## [3.27.1] - 2023-06-21
+### Fixed
+
+- `Phone` parameter instead of `PhoneNumber` for MBWay
+
+## [3.27.0] - 2023-06-21
+### Added
+
+- MB WAY is now available as a payment method with Mangopay. This payment method is in private beta. Please contact support if you have any questions.
+
 ## [3.26.0] - 2023-03-17
 ### Added
 
