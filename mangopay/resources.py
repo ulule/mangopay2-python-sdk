@@ -1001,7 +1001,7 @@ class IdealPayIn(PayIn):
     debited_funds = MoneyField(api_name='DebitedFunds', required=True)
     fees = MoneyField(api_name='Fees', required=True)
     return_url = CharField(api_name='ReturnURL', required=True)
-    bic = CharField(api_name='Bic', choices=constants.BIC_CHOICES, required=True)
+    bic = CharField(api_name='Bic', choices=constants.BIC_CHOICES)
     statement_descriptor = CharField(api_name='StatementDescriptor')
     creation_date = DateTimeField(api_name='CreationDate')
     redirect_url = CharField(api_name='RedirectURL')
