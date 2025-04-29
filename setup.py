@@ -1,6 +1,7 @@
-from setuptools import setup, find_packages
 from codecs import open
 from os import path
+
+from setuptools import setup, find_packages
 
 here = path.abspath(path.dirname(__file__))
 
@@ -9,7 +10,7 @@ with open(path.join(here, 'DESCRIPTION.md'), encoding='utf-8') as f:
 
 setup(
     name='mangopaysdk',
-    version='3.31.0',
+    version='3.43.0',
     description='A client library written in python to work with mangopay v2 api',
     long_description='This SDK is a client library for interacting with the Mangopay API.',
     url='https://github.com/Mangopay/mangopay2-python-sdk',
@@ -20,9 +21,10 @@ setup(
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Build Tools',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12'
     ],
     keywords='mangopay api development emoney sdk',
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),

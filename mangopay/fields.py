@@ -10,7 +10,9 @@ from .utils import timestamp_from_datetime, timestamp_from_date, Money, DebitedB
     Reason, ReportTransactionsFilters, ReportWalletsFilters, \
     PlatformCategorization, Billing, SecurityInfo, Birthplace, ApplepayPaymentData, GooglepayPaymentData, \
     ScopeBlocked, BrowserInfo, Shipping, CurrentState, FallbackReason, InstantPayout, CountryAuthorizationData, \
-    PayinsLinked, ConversionRate, CardInfo
+    PayinsLinked, ConversionRate, CardInfo, LocalAccountDetails, InternationalAccountDetails, \
+    VirtualAccountCapabilities, PaymentRef, PendingUserAction, LegalRepresentative, IndividualRecipient, \
+    BusinessRecipient, RecipientPropertySchema, IndividualRecipientPropertySchema, BusinessRecipientPropertySchema
 
 
 class FieldDescriptor(object):
@@ -160,7 +162,7 @@ class FloatField(Field):
 
 class DictField(Field):
     def api_value(self, value):
-        return json.dumps(value)
+        return value
 
     def python_value(self, value):
         if value is not None and isinstance(value, str):
@@ -206,9 +208,34 @@ class MoneyField(Field):
         value = super(MoneyField, self).api_value(value)
 
         if isinstance(value, Money):
+            if value.amount is not None:
+                value = {
+                    'Currency': value.currency,
+                    'Amount': int(value.amount)
+                }
+            else:
+                value = {
+                    'Currency': value.currency,
+                    'Amount': None
+                }
+
+        return value
+
+
+class PaymentRefField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PaymentRef(reason_type=value['ReasonType'], reference_id=value['ReferenceId'])
+
+        return value
+
+    def api_value(self, value):
+        value = super(PaymentRefField, self).api_value(value)
+
+        if isinstance(value, PaymentRef):
             value = {
-                'Currency': value.currency,
-                'Amount': int(value.amount)
+                'ReasonType': value.reason_type,
+                'ReferenceId': value.reference_id
             }
 
         return value
@@ -338,12 +365,20 @@ class ReportTransactionsFiltersField(Field):
         if value is not None:
             local_min_debited_funds_amount = ''
             local_max_debited_funds_amount = ''
+            local_min_fees_amount = ''
+            local_max_fees_amount = ''
 
             if 'MinDebitedFundsAmount' in value and value['MinDebitedFundsAmount']:
                 local_min_debited_funds_amount = int(value['MinDebitedFundsAmount'])
 
             if 'MaxDebitedFundsAmount' in value and value['MaxDebitedFundsAmount']:
                 local_max_debited_funds_amount = int(value['MaxDebitedFundsAmount'])
+
+            if 'MinFeesAmount' in value and value['MinFeesAmount']:
+                local_min_fees_amount = int(value['MinFeesAmount'])
+
+            if 'MaxFeesAmount' in value and value['MaxFeesAmount']:
+                local_max_fees_amount = int(value['MaxFeesAmount'])
 
             author_id = None
             wallet_id = None
@@ -361,6 +396,11 @@ class ReportTransactionsFiltersField(Field):
                                              min_debited_funds_currency=value['MinDebitedFundsCurrency'],
                                              max_debited_funds_amount=local_max_debited_funds_amount,
                                              max_debited_funds_currency=value['MaxDebitedFundsCurrency'],
+                                             result_code=value['ResultCode'],
+                                             min_fees_amount=local_min_fees_amount,
+                                             min_fees_currency=value['MinFeesCurrency'],
+                                             max_fees_amount=local_max_fees_amount,
+                                             max_fees_currency=value['MaxFeesCurrency'],
                                              author_id=author_id, wallet_id=wallet_id
                                              )
         return value
@@ -390,6 +430,11 @@ class ReportTransactionsFiltersField(Field):
                 'MinDebitedFundsCurrency': value.min_debited_funds_currency,
                 'MaxDebitedFundsAmount': value.max_debited_funds_amount,
                 'MaxDebitedFundsCurrency': value.max_debited_funds_currency,
+                'ResultCode': value.result_code,
+                'MinFeesAmount': value.min_fees_amount,
+                'MinFeesCurrency': value.min_fees_currency,
+                'MaxFeesAmount': value.max_fees_amount,
+                'MaxFeesCurrency': value.max_fees_currency,
                 'AuthorId': value.author_id,
                 'WalletId': value.wallet_id,
             }
@@ -873,6 +918,7 @@ class PayinsLinkedField(Field):
 
         return value
 
+
 class ConversionRateField(Field):
     def python_value(self, value):
         if value is not None:
@@ -914,6 +960,223 @@ class CardInfoField(Field):
                 'Type': value.type,
                 'Brand': value.brand,
                 'SubType': value.sub_type,
+            }
+
+        return value
+
+
+class LocalAccountDetailsField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return LocalAccountDetails(address=value['Address'], account=value['Account'])
+        return value
+
+    def api_value(self, value):
+        value = super(LocalAccountDetailsField, self).api_value(value)
+
+        if isinstance(value, LocalAccountDetails):
+            value = {
+                'Address': value.address,
+                'Account': value.account
+            }
+
+        return value
+
+
+class InternationalAccountDetailsField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return InternationalAccountDetails(address=value['Address'], account=value['Account'])
+        return value
+
+    def api_value(self, value):
+        value = super(InternationalAccountDetailsField, self).api_value(value)
+
+        if isinstance(value, InternationalAccountDetails):
+            value = {
+                'Address': value.address,
+                'Account': value.account
+            }
+
+        return value
+
+
+class VirtualAccountCapabilitiesField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return VirtualAccountCapabilities(local_pay_in_available=value['LocalPayinAvailable'],
+                                              international_pay_in_available=value['InternationalPayinAvailable'],
+                                              currencies=value['Currencies'])
+        return value
+
+    def api_value(self, value):
+        value = super(VirtualAccountCapabilitiesField, self).api_value(value)
+
+        if isinstance(value, VirtualAccountCapabilities):
+            value = {
+                'LocalPayinAvailable': value.local_pay_in_available,
+                'InternationalPayinAvailable': value.international_pay_in_available,
+                'Currencies': value.currencies
+            }
+
+        return value
+
+
+class PendingUserActionField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PendingUserAction(redirect_url=value['RedirectUrl'])
+
+        return value
+
+    def api_value(self, value):
+        value = super(PendingUserActionField, self).api_value(value)
+
+        if isinstance(value, PendingUserAction):
+            value = {
+                'RedirectUrl': value.redirect_url
+            }
+
+        return value
+
+
+class LegalRepresentativeField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return LegalRepresentative(first_name=value['FirstName'], last_name=value['LastName'],
+                                       birthday=value['Birthday'],
+                                       nationality=value['Nationality'],
+                                       country_of_residence=value['CountryOfResidence'],
+                                       email=value['Email'], phone_number=value['PhoneNumber'],
+                                       phone_number_country=value['PhoneNumberCountry'])
+
+        return value
+
+    def api_value(self, value):
+        value = super(LegalRepresentativeField, self).api_value(value)
+
+        if isinstance(value, LegalRepresentative):
+            value = {
+                'FirstName': value.first_name,
+                'LastName': value.last_name,
+                'Birthday': value.birthday,
+                'Nationality': value.nationality,
+                'CountryOfResidence': value.country_of_residence,
+                'Email': value.email,
+                'PhoneNumber': value.phone_number,
+                'PhoneNumberCountry': value.phone_number_country
+            }
+
+        return value
+
+
+class IndividualRecipientField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return IndividualRecipient(first_name=value.get('FirstName', None), last_name=value.get('LastName', None),
+                                       address=value.get('Address', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(IndividualRecipientField, self).api_value(value)
+
+        if isinstance(value, IndividualRecipient):
+            value = {
+                'FirstName': value.first_name,
+                'LastName': value.last_name,
+                'Address': value.address
+            }
+
+        return value
+
+
+class BusinessRecipientField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return BusinessRecipient(business_name=value.get('BusinessName', None), address=value.get('Address', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(BusinessRecipientField, self).api_value(value)
+
+        if isinstance(value, BusinessRecipient):
+            value = {
+                'BusinessName': value.business_name,
+                'Address': value.address
+            }
+
+        return value
+
+
+class RecipientPropertySchemaField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return RecipientPropertySchema(required=value.get('Required', None),
+                                           max_length=value.get('MaxLength', None),
+                                           min_length=value.get('MinLength', None),
+                                           pattern=value.get('Pattern', None),
+                                           allowed_values=value.get('AllowedValues', None),
+                                           label=value.get('Label', None),
+                                           end_user_display=value.get('EndUserDisplay', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(RecipientPropertySchemaField, self).api_value(value)
+
+        if isinstance(value, RecipientPropertySchema):
+            value = {
+                'Required': value.required,
+                'MaxLength': value.max_length,
+                'MinLength': value.min_length,
+                'Pattern': value.pattern,
+                'AllowedValues': value.allowed_values,
+                'Label': value.label,
+                'EndUserDisplay': value.end_user_display
+            }
+
+        return value
+
+
+class IndividualRecipientPropertySchemaField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return IndividualRecipientPropertySchema(first_name=value.get('FirstName', None),
+                                                     last_name=value.get('LastName', None),
+                                                     address=value.get('Address', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(IndividualRecipientPropertySchemaField, self).api_value(value)
+
+        if isinstance(value, IndividualRecipientPropertySchema):
+            value = {
+                'FirstName': value.first_name,
+                'LastName': value.last_name,
+                'Address': value.address
+            }
+
+        return value
+
+
+class BusinessRecipientPropertySchemaField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return BusinessRecipientPropertySchema(business_name=value.get('BusinessName', None),
+                                                   address=value.get('Address', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(BusinessRecipientPropertySchemaField, self).api_value(value)
+
+        if isinstance(value, BusinessRecipientPropertySchema):
+            value = {
+                'BusinessName': value.business_name,
+                'Address': value.address
             }
 
         return value

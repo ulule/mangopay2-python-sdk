@@ -1,3 +1,229 @@
+## [3.43.0] - 2025-04-29
+### Added
+
+#### SCA on wallet access endpoints
+`ScaContext` query parameter added on wallet access endpoints for the [introduction of SCA](https://docs.mangopay.com/guides/sca/wallets):
+
+- [GET View a Wallet](https://docs.mangopay.com/api-reference/wallets/view-wallet)
+- [GET List Wallets for a User](https://docs.mangopay.com/api-reference/wallets/list-wallets-user)
+- [GET List Transactions for a User](https://docs.mangopay.com/api-reference/transactions/list-transactions-user)
+- [GET List Transactions for a Wallet](https://docs.mangopay.com/api-reference/transactions/list-transactions-wallet)
+
+If SCA is required, Mangopay responds with a 401 response code. The `PendingUserAction` `RedirectUrl` is in the dedicated `WWW-Authenticate` response header.
+
+See the tests for examples on handling this error.
+
+#### BLIK with code
+Support for [BLIK with code endpoint](https://docs.mangopay.com/api-reference/blik/create-blik-payin-with-code)
+
+## [3.42.0] - 2025-04-24
+### Added 
+
+#### Recipients
+- [GET View payout methods](/api-reference/recipients/view-payout-methods)
+- [GET View the schema for a Recipient](/api-reference/recipients/view-recipient-schema)
+- [POST Validate data for a Recipient](/api-reference/recipients/validate-recipient-data)
+- [POST Create a Recipient](/api-reference/recipients/create-recipient)
+- [GET View a Recipient](/api-reference/recipients/view-recipient)
+- [GET List Recipients for a user](/api-reference/recipients/list-recipients-user)
+- [PUT Deactivate a Recipient](/api-reference/recipients/deactivate-recipient)
+- Webhook event types:
+  - `RECIPIENT_ACTIVE`
+  - `RECIPIENT_CANCELED`
+  - `RECIPIENT_DEACTIVATED`
+
+#### SCA on Owner-initiated transfers
+- On [POST Create a Transfer](/api-reference/transfers/create-transfer)
+  - `ScaContext` body parameter 
+  - `PendingUserAction` response field containing `RedirectUrl`
+
+#### Endpoints to close a user account
+- [DELETE Close a Natural User](/api-reference/users/close-natural-user)
+- [DELETE Close a Legal User](/api-reference/users/close-legal-user)
+
+## [3.41.0] - 2025-04-24
+### Changed
+- ⚠️ **Caution – Minimum language requirement changed to Python 3.9** ⚠️ 
+
+The SDK has been upgraded to require Python 3.9 as a minimum version. This is due to dependencies in the SDK's deployment pipeline on GitHub Actions and Ubuntu runners, which no longer support lower than Python 3.9. Older versions of Python reached end-of-life in 2024 or before.
+
+Failure to upgrade your Python language version to 3.9 before updating to this version of the SDK will result in errors. For more information on the differences between Python 3.9 and earlier, see the [Python docs](https://docs.python.org/3/whatsnew/3.9.html).
+
+The SDK supports Python 3.9, 3.10, 3.11, and 3.12.
+
+
+#### Added
+- [POST Create a TWINT PayIn](https://docs.mangopay.com/api-reference/twint/create-twint-payin)
+- [POST Create a Pay by Bank PayIn](https://docs.mangopay.com/api-reference/pay-by-bank/create-pay-by-bank-payin), including related `PAYIN_NORMAL_PROCESSING_STATUS_PENDING_SUCCEEDED` webhook event type
+- PayPal recurring payments, thanks to the `PaymentType` value `PAYPAL` on [Recurring PayIn Registrations](https://docs.mangopay.com/api-reference/recurring-payin-registrations/create-recurring-payin-registration-paypal) and new endpoints ([POST Create a Recurring PayPal PayIn (CIT)](https://docs.mangopay.com/api-reference/paypal/create-recurring-paypal-payin-cit) and [POST Create a Recurring PayPal PayIn (MIT)](https://docs.mangopay.com/api-reference/paypal/create-recurring-paypal-payin-mit)
+
+## [3.40.1] - 2025-04-02
+### Changed
+- User-Agent Header value standardized on format: User-Agent: Mangopay-SDK/`SDKVersion` (`Language`/`LanguageVersion`)
+
+### Fixed
+- Fixed tests for categorize SCA users endpoint
+
+## [3.40.0] - 2025-03-19
+### Added
+
+New endpoints for [strong customer authentication (SCA)](https://docs.mangopay.com/guides/users/sca) on Owner users:
+- [POST Create a Natural User (SCA)](https://docs.mangopay.com/api-reference/users/create-natural-user-sca)
+- [PUT Update a Natural User (SCA)](https://docs.mangopay.com/api-reference/users/update-natural-user-sca)
+- [POST Create a Legal User (SCA)](https://docs.mangopay.com/api-reference/users/create-legal-user-sca)
+- [PUT Update a Legal User (SCA)](https://docs.mangopay.com/api-reference/users/update-legal-user-sca)
+- [PUT Categorize a Natural User (SCA)](https://docs.mangopay.com/api-reference/users/categorize-natural-user)
+- [PUT Categorize a Legal User (SCA)](https://docs.mangopay.com/api-reference/users/categorize-legal-user)
+- [POST Enroll a User in SCA](https://docs.mangopay.com/api-reference/users/enroll-user)
+
+### Added 
+
+New endpoint for Payconiq:
+- [POST Create a Payconiq PayIn](https://docs.mangopay.com/api-reference/payconiq/create-payconiq-payin)
+
+## [3.39.1] - 2025-02-28
+### Fixed
+
+Rate limiting headers interpreted dynamically based on `X-RateLimit-Reset` time and for a variable number of bucket values.
+
+## [3.39.0] - 2025-02-25
+### Added
+
+Endpoints and webhooks for [hosted KYC/B solution](https://docs.mangopay.com/guides/users/verification/hosted) (in beta)
+
+- Endpoints
+  - [Create an IDV Session](https://docs.mangopay.com/api-reference/idv-sessions/create-idv-session)
+  - [View an IDV Session](https://docs.mangopay.com/api-reference/idv-sessions/view-idv-session)
+  - [View Checks for an IDV Session](https://mangopay-idv.mintlify.app/api-reference/idv-sessions/view-idv-session-checks)
+
+- Event types 
+  - `IDENTITY_VERIFICATION_VALIDATED`
+  - `IDENTITY_VERIFICATION_FAILED`
+  - `IDENTITY_VERIFICATION_INCONCLUSIVE`
+  - `IDENTITY_VERIFICATION_OUTDATED`
+
+`CardInfo` added for [Apple Pay](https://docs.mangopay.com/api-reference/apple-pay/create-apple-pay-payin) and [Google Pay](https://docs.mangopay.com/api-reference/google-pay/create-google-pay-payin)
+
+### Fixed
+
+Test for KYC documents test_GetKycDocuments
+
+Updating the UBO should not require the full object
+
+Get User EMoney wrong output
+
+## [3.38.0] - 2025-02-14
+### Added
+
+New endpoint for the [Swish PayIn](https://docs.mangopay.com/api-reference/swish/swish-payin-object) object:
+
+-  [Create a Swish PayIn](https://docs.mangopay.com/api-reference/swish/create-swish-payin)
+-  [View a PayIn (Swish)](https://docs.mangopay.com/api-reference/swish/view-payin-swish)
+
+## [3.37.2] - 2025-02-05
+### Updated
+
+Revised tests to improve reliability and address any outdated tests.
+
+## [3.37.1] - 2025-02-03
+### Fixed
+
+Added missing `debited_funds` and `fees` parameters to the `BankWirePayInExternalInstruction` class.
+
+## [3.37.0] - 2024-12-13
+### Added
+
+- New `PaymentRef` parameter for [Payouts](https://docs.mangopay.com/api-reference/payouts/payout-object#the-payout-object).
+
+## [3.36.1] - 2024-11-28
+### Updated
+
+Added all relevant `EVENT_TYPE_CHOICES` for virtual accounts:
+- `VIRTUAL_ACCOUNT_ACTIVE`
+- `VIRTUAL_ACCOUNT_BLOCKED`
+- `VIRTUAL_ACCOUNT_CLOSED`
+- `VIRTUAL_ACCOUNT_FAILED`
+
+## [3.36.0] - 2024-11-22
+### Added
+
+New endpoints for The Virtual Account object:
+
+- Create a Virtual Account
+- Deactivate a Virtual Account
+- View a Virtual Account
+- List Virtual Accounts for a Wallet
+- View Client Availabilities
+
+## [3.35.1] - 2024-09-03
+### Fixed
+
+- Add `PreferredCardNetwork` parameter to Direct Card PayIn object. (thank you @pmourlanne) 
+
+## [3.35.0] - 2024-08-13
+### Added
+- New endpoint: [Create a Bancontact PayIn](https://mangopay.com/docs/endpoints/bancontact#create-bancontact-payin)
+
+## [3.34.3] - 2024-08-09
+### Fixed
+
+- Disable `truncatechars` function that would truncate data if it's over 255 characters.
+
+## [3.34.2] - 2024-07-25
+### Added
+- New parameter SecureModeRedirectURL for [Google Pay PayIn](https://mangopay.com/docs/endpoints/google-pay#google-pay-payin-object)
+- New parameters StatementDescriptor for [Refund](https://mangopay.com/docs/endpoints/refunds#refund-object)
+
+## [3.34.1] - 2024-06-12
+### Added
+
+- New endpoint [List Transactions for a Client Wallet](https://mangopay.com/docs/endpoints/wallets#list-transactions-client-wallet)
+
+## [3.34.0] - 2024-05-31
+### Fixed 
+
+- Usage of filters with `ReportTransactions` and the `create()` method
+- BIC is not required for iDeal 
+
+### Added
+
+- New endpoint [Add tracking to Paypal payin](https://mangopay.com/docs/endpoints/paypal#add-tracking-paypal-payin)
+- New parameter `SecureMode` for [Create card validation](https://mangopay.com/docs/endpoints/card-validations#create-card-validation)
+- New parameters for Paypal mean of payment : `CancelURL` & `Category` (sub-parameter of `LineItems`). And management of `PaypalPayerID`, `BuyerCountry`, `BuyerFirstname`, `BuyerLastname`, `BuyerPhone`, `PaypalOrderID` in the response.
+- New parameter `PaymentCategory` for [Create card validation](https://mangopay.com/docs/endpoints/card-validations#create-card-validation) and two additional endpoints [More info](https://mangopay.com/docs/release-notes/kivu)
+
+## [3.33.2] - 2024-05-24
+### Added
+
+- New parameter `CardHolderName` for [Update Card registration](https://mangopay.com/docs/endpoints/card-validations#update-card-registration) 
+
+## [3.33.1] - 2024-04-30
+### Fixed
+
+- Updated the implementation for [Look up metadata for a payment method](https://mangopay.com/docs/endpoints/payment-method-metadata#lookup-payment-method-metadata). The `CommercialIndicator` and `CardType` fields have been moved to the `BinData` object in the API response.
+
+## [3.33.0] - 2024-03-08
+### Fixed
+
+- Fixed incorrect spelling of the `Subtype` key in the `BinData` parameter.
+- Conversions endpoint spelling
+
+### Added
+
+- The optional Fees parameter is now available on instant conversions, allowing platforms to charge users for FX services. More information [here](https://mangopay.com/docs/release-notes/millefeuille).
+- Platforms can now use a quote to secure the rate for a conversion between two currencies for a set amount of time. More information [here](https://mangopay.com/docs/release-notes/millefeuille).
+- Introduced the `uk_header_flag` boolean configuration key. Platforms partnered with Mangopay's UK entity should set this key to true for proper configuration.
+
+## [3.32.0] - 2024-02-12
+### Added
+
+- New endpoint to look up metadata from BIN or Google Pay token. More information [here](https://mangopay.com/docs/release-notes/kisale)
+- [Get a card validation endpoint](https://mangopay.com/docs/endpoints/card-validations#view-card-validation)
+
+### Fixed
+
+- Resolved an issue in our Python SDK where certain events were unable to process string-based IDs
+
 ## [3.31.0] - 2023-12-22
 ### Added
 

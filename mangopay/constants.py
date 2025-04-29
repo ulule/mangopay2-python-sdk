@@ -108,6 +108,8 @@ EVENT_TYPE_CHOICES = Choices(
     ('PAYIN_NORMAL_CREATED', 'payin_normal_created', 'Payin normal created'),
     ('PAYIN_NORMAL_SUCCEEDED', 'payin_normal_succeeded', 'Payin normal succeeded'),
     ('PAYIN_NORMAL_FAILED', 'payin_normal_failed', 'Payin normal failed'),
+    ('PAYIN_NORMAL_PROCESSING_STATUS_PENDING_SUCCEEDED',
+     'payin_normal_processing_status_pending_succeeded', 'Payin normal processing status pending succeeded'),
     ('PAYOUT_NORMAL_CREATED', 'payout_normal_created', 'Payout normal created'),
     ('PAYOUT_NORMAL_SUCCEEDED', 'payout_normal_succeeded', 'Payout normal succeeded'),
     ('PAYOUT_NORMAL_FAILED', 'payout_normal_failed', 'Payout normal failed'),
@@ -171,6 +173,11 @@ EVENT_TYPE_CHOICES = Choices(
     ('UBO_DECLARATION_INCOMPLETE', 'ubo_declaration_incomplete', 'Ubo Declaration Incomplete'),
     ('USER_KYC_LIGHT', 'user_kyc_light', 'User Kyc Light'),
 
+    ('VIRTUAL_ACCOUNT_ACTIVE', 'virtual_account_active', 'Virtual Account Active'),
+    ('VIRTUAL_ACCOUNT_BLOCKED', 'virtual_account_blocked', 'Virtual Account Blocked'),
+    ('VIRTUAL_ACCOUNT_CLOSED', 'virtual_account_closed', 'Virtual Account Closed'),
+    ('VIRTUAL_ACCOUNT_FAILED', 'virtual_account_failed', 'Virtual Account Failed'),
+
     ('DEPOSIT_PREAUTHORIZATION_CREATED', 'deposit_preauthorization_created', 'Deposit Preauthorization Created'),
     ('DEPOSIT_PREAUTHORIZATION_FAILED', 'deposit_preauthorization_failed', 'Deposit Preauthorization Failed'),
     ('DEPOSIT_PREAUTHORIZATION_PAYMENT_WAITING', 'deposit_preauthorization_payment_waiting',
@@ -187,6 +194,16 @@ EVENT_TYPE_CHOICES = Choices(
     ('CARD_VALIDATION_CREATED', 'card_validation_created', 'Card Validation Created'),
     ('CARD_VALIDATION_FAILED', 'card_validation_failed', 'Card Validation Failed'),
     ('CARD_VALIDATION_SUCCEEDED', 'card_validation_succeeded', 'Card Validation Succeeded'),
+
+    ('IDENTITY_VERIFICATION_VALIDATED', 'identity_verification_validated', 'Identity Verification Validated'),
+    ('IDENTITY_VERIFICATION_FAILED', 'identity_verification_failed', 'Identity Verification Failed'),
+    ('IDENTITY_VERIFICATION_INCONCLUSIVE', 'identity_verification_inconclusive', 'Identity Verification Inconclusive'),
+    ('IDENTITY_VERIFICATION_OUTDATED', 'identity_verification_outdated', 'Identity Verification Outdated'),
+    ('IDENTITY_VERIFICATION_TIMEOUT', 'identity_verification_timeout', 'Identity Verification Timeout'),
+
+    ('RECIPIENT_ACTIVE', 'recipient_active', 'Recipient Active'),
+    ('RECIPIENT_CANCELED', 'recipient_canceled', 'Recipient Canceled'),
+    ('RECIPIENT_DEACTIVATED', 'recipient_deactivated', 'Recipient Deactivated'),
 )
 
 NOTIFICATION_STATUS_CHOICES = Choices(
@@ -304,7 +321,15 @@ PAYIN_PAYMENT_TYPE = Choices(
     ("SATISPAY", "satispay", "Satispay"),
     ("BLIK", "blik", "Blik"),
     ("IDEAL", "ideal", "Ideal"),
-    ("GIROPAY", "giropay", "Giropay")
+    ("GIROPAY", "giropay", "Giropay"),
+    ("BCMC", "bancontact", "Bancontact"),
+    ("SWISH", "swish", "Swish"),
+    ("TWINT", "twint", "Twint")
+)
+
+RECURRING_PAYIN_REGISTRATION_PAYMENT_TYPE = Choices(
+    ("CARD_DIRECT", "card_direct", "Card Direct"),
+    ("PAYPAL", "paypal", "PayPal"),
 )
 
 CARD_STATUS_CHOICES = Choices(

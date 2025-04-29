@@ -676,9 +676,9 @@ class PreAuthorizationsTestLive(BaseTestLive):
 
         saved_registration = card_registration.save()
         data = {
-            'cardNumber': '4970105191923460',
+            'cardNumber': '4970107111111119',
             'cardCvx': '123',
-            'cardExpirationDate': '1224',
+            'cardExpirationDate': '1229',
             'accessKeyRef': card_registration.access_key,
             'data': card_registration.preregistration_data
         }
@@ -729,9 +729,9 @@ class PreAuthorizationsTestLive(BaseTestLive):
 
         saved_registration = card_registration.save()
         data = {
-            'cardNumber': '4970105191923460',
+            'cardNumber': '4970107111111119',
             'cardCvx': '123',
-            'cardExpirationDate': '1224',
+            'cardExpirationDate': '1229',
             'accessKeyRef': card_registration.access_key,
             'data': card_registration.preregistration_data
         }
@@ -740,6 +740,7 @@ class PreAuthorizationsTestLive(BaseTestLive):
         }
         registration_data_response = requests.post(card_registration.card_registration_url, data=data, headers=headers)
         saved_registration['registration_data'] = registration_data_response.text
+        saved_registration['card_holder_name'] = "John Silver"
         updated_registration = CardRegistration(**saved_registration).save()
 
         card = Card.get(updated_registration['card_id'])
@@ -782,6 +783,7 @@ class PreAuthorizationsTestLive(BaseTestLive):
         payin.culture = 'fr'
         BaseTestLive._johns_payin = PreAuthorizedPayIn(**payin.save())
 
+        time.sleep(2)
         transactions = pre_authorization.get_transactions()
 
         self.assertIsNotNone(saved_pre_authorization)
@@ -790,6 +792,7 @@ class PreAuthorizationsTestLive(BaseTestLive):
         self.assertEqual(security_info.avs_result, "NO_CHECK")
         self.assertEqual(payin.status, "SUCCEEDED")
         self.assertEqual(transactions[0].status, "SUCCEEDED")
+        self.assertIsNotNone(card.card_holder_name)
 
     def test_PreAuthorizations_CheckCardInfo(self):
         user = BaseTestLive.get_john()
@@ -799,9 +802,9 @@ class PreAuthorizationsTestLive(BaseTestLive):
 
         saved_registration = card_registration.save()
         data = {
-            'cardNumber': '4970105191923460',
+            'cardNumber': '4970107111111119',
             'cardCvx': '123',
-            'cardExpirationDate': '1224',
+            'cardExpirationDate': '1229',
             'accessKeyRef': card_registration.access_key,
             'data': card_registration.preregistration_data
         }
@@ -825,6 +828,7 @@ class PreAuthorizationsTestLive(BaseTestLive):
         pre_authorization.secure_mode_return_url = "http://www.example.com/"
         pre_authorization.ip_address = "2001:0620:0000:0000:0211:24FF:FE80:C12C"
         pre_authorization.browser_info = BaseTest.get_browser_info()
+        pre_authorization.payment_category = 'TelephoneOrder'
 
         billing = Billing()
         billing.address = Address()
@@ -843,3 +847,4 @@ class PreAuthorizationsTestLive(BaseTestLive):
         card_info = saved_pre_authorization['card_info']
         self.assertIsNotNone(card_info)
         self.assertIsInstance(card_info, CardInfo)
+        self.assertEqual('TelephoneOrder', saved_pre_authorization['payment_category'])

@@ -25,11 +25,15 @@ class BaseQuery(object):
 
         return pairs
 
-    def parse_url(self, meta_url, params=None):
+    def parse_url(self, meta_url, params=None, path_params=None):
         if isinstance(meta_url, dict):
             url = meta_url.get(self.identifier)
         else:
             url = meta_url
+
+        # useful when there is a need to pass a path param which should not be part of the object
+        if path_params:
+            url = url % path_params
 
         if params:
             url = url % params
@@ -43,7 +47,7 @@ class SelectQuery(BaseQuery):
     def __init__(self, model, *args, **kwargs):
         super(SelectQuery, self).__init__(model, 'GET')
 
-    def get(self, reference, handler=None, resource_model=None, without_client_id=False, **kwargs):
+    def get(self, reference, handler=None, resource_model=None, without_client_id=False, with_query_params=False, **kwargs):
         model = resource_model or self.model
         handler = handler or self.handler
 
@@ -53,7 +57,10 @@ class SelectQuery(BaseQuery):
         else:
             url = '%s' % meta_url
 
-        result, data = handler.request(self.method, url, without_client_id=without_client_id)
+        if with_query_params:
+            result, data = handler.request(self.method, url, without_client_id=without_client_id, **kwargs)
+        else:
+            result, data = handler.request(self.method, url, without_client_id=without_client_id)
 
         if 'errors' in data:
             if result.status_code == 404:
@@ -105,9 +112,10 @@ class SelectQuery(BaseQuery):
 class InsertQuery(BaseQuery):
     identifier = 'INSERT'
 
-    def __init__(self, model, idempotency_key=None, **kwargs):
+    def __init__(self, model, idempotency_key=None, path_params=None, **kwargs):
         self.insert_query = kwargs
         self.idempotency_key = idempotency_key
+        self.path_params = path_params
         super(InsertQuery, self).__init__(model, 'POST')
 
     def parse_insert(self):
@@ -126,7 +134,7 @@ class InsertQuery(BaseQuery):
 
         data = self.parse_insert()
 
-        url = self.parse_url(self.model._meta.url, self.insert_query)
+        url = self.parse_url(self.model._meta.url, self.insert_query, self.path_params)
 
         result, data = handler.request(self.method,
                                        url,
@@ -165,6 +173,25 @@ class UpdateQuery(BaseQuery):
         result, data = handler.request(self.method,
                                        url,
                                        data=data)
+
+        return self.parse_result(data)
+
+
+class DeleteQuery(BaseQuery):
+    identifier = 'DELETE'
+
+    def __init__(self, model, reference, **kwargs):
+        self.delete_query = kwargs
+        self.reference = reference
+        super(DeleteQuery, self).__init__(model, 'DELETE')
+
+    def execute(self, handler=None):
+        handler = handler or self.handler
+
+        meta_url = self.parse_url(self.model._meta.url, self.delete_query)
+        url = '%s/%s' % (meta_url, self.reference)
+
+        result, data = handler.request(self.method, url)
 
         return self.parse_result(data)
 

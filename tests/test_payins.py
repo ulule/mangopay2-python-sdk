@@ -7,12 +7,14 @@ import responses
 from mangopay.resources import DirectDebitDirectPayIn, Mandate, ApplepayPayIn, GooglepayPayIn, \
     RecurringPayInRegistration, \
     RecurringPayInCIT, PayInRefund, RecurringPayInMIT, CardPreAuthorizedDepositPayIn, MbwayPayIn, PayPalWebPayIn, \
-    GooglePayDirectPayIn, MultibancoPayIn, SatispayPayIn, BlikPayIn, KlarnaPayIn, IdealPayIn, GiropayPayIn, CardRegistration
+    GooglePayDirectPayIn, MultibancoPayIn, SatispayPayIn, BlikPayIn, KlarnaPayIn, IdealPayIn, GiropayPayIn, \
+    CardRegistration, BancontactPayIn, SwishPayIn, PayconiqV2PayIn, TwintPayIn, PayByBankPayIn, RecurringPayPalPayInCIT, \
+    RecurringPayPalPayInMIT
 from mangopay.utils import (Money, ShippingAddress, Shipping, Billing, Address, SecurityInfo, ApplepayPaymentData,
                             GooglepayPaymentData, DebitedBankAccount, LineItem, CardInfo)
 from tests import settings
 from tests.resources import (Wallet, DirectPayIn, BankWirePayIn, PayPalPayIn,
-                             PayconiqPayIn, CardWebPayIn, DirectDebitWebPayIn, constants)
+                             PayconiqPayIn, CardWebPayIn, DirectDebitWebPayIn, constants, PaymentMethodMetadata)
 from tests.test_base import BaseTest, BaseTestLive
 
 
@@ -770,6 +772,23 @@ class PayInsTest(BaseTest):
         self.assertIs(payin.Tag, payin.tag)
 
 
+def new_blik(user, credited_wallet):
+    pay_in = BlikPayIn()
+    pay_in.author = user
+    pay_in.credited_wallet = credited_wallet
+    pay_in.fees = Money()
+    pay_in.fees.amount = 300
+    pay_in.fees.currency = 'PLN'
+    pay_in.debited_funds = Money()
+    pay_in.debited_funds.amount = 1000
+    pay_in.debited_funds.currency = 'PLN'
+    pay_in.statement_descriptor = 'test'
+    pay_in.return_url = 'https://example.com?transactionId=wt_57b8f69d-cbcc-4202-9a4f-9a3f3668240b'
+    pay_in.redirect_url = 'https://r3.girogate.de/ti/dumbdummy?tx=140079495229&rs=oHkl4WvsgwtWpMptWpqWlFa90j0EzzO9&cs=e43baf1ae4a556dfb823fd304acc408580c193e04c1a9bcb26699b4185393b05'
+    pay_in.tag = 'Blik tag'
+    return pay_in
+
+
 class PayInsTestLive(BaseTestLive):
     @unittest.skip('Set a breakpoint after creating the mandate, navigate to mandate.redirect_url and confirm')
     def test_PayIns_DirectDebitDirect_Create(self):
@@ -982,6 +1001,114 @@ class PayInsTestLive(BaseTestLive):
         get = RecurringPayInRegistration.get(rec_id)
         self.assertIsNotNone(get)
 
+    def test_RecurringPaymentPayPalCIT(self):
+        user = self.get_john(True)
+        wallet = self.get_johns_wallet(True)
+
+        recurring = RecurringPayInRegistration()
+        recurring.author = user
+        recurring.credited_wallet = wallet
+        recurring.first_transaction_debited_funds = Money(1000, "EUR")
+        recurring.first_transaction_fees = Money(0, "EUR")
+        address = Address()
+        address.address_line_1 = "Big Street"
+        address.address_line_2 = "no 2 ap 6"
+        address.country = "FR"
+        address.city = "Lyon"
+        address.postal_code = "68400"
+        recurring.billing = Billing(first_name="John", last_name="Doe", address=address)
+        recurring.shipping = Shipping(first_name="John", last_name="Doe", address=address)
+        recurring.payment_type = constants.PAYIN_PAYMENT_TYPE.paypal
+        created_recurring = recurring.save()
+        self.assertIsNotNone(created_recurring)
+
+        cit = RecurringPayPalPayInCIT()
+        cit.recurring_payin_registration_id = created_recurring['id']
+        cit.return_url = 'http://example.com'
+        cit.cancel_url = 'http://example.net'
+        cit.shipping_preference = constants.SHIPPING_PREFERENCE_CHOICES.set_provided_address
+        cit.reference = 'abcd-efgh-ijkl'
+        cit.statement_descriptor = "Example123"
+
+        line_item = LineItem()
+        line_item.name = "test"
+        line_item.quantity = 1
+        line_item.unit_amount = 1000
+        line_item.tax_amount = 0
+        line_item.description = "test"
+        line_item.category = "DIGITAL_GOODS"
+        cit.line_items = [line_item]
+
+        created_cit = cit.save()
+        self.assertIsNotNone(created_cit)
+        cit_id = created_cit.get('id')
+
+        got_cit = RecurringPayPalPayInCIT.get(cit_id)
+        self.assertIsNotNone(got_cit)
+        self.assertIsInstance(got_cit, RecurringPayPalPayInCIT)
+        self.assertEqual('CREATED', got_cit.status)
+        self.assertEqual('PAYPAL', got_cit.payment_type)
+        self.assertEqual('WEB', got_cit.execution_type)
+        self.assertEqual('PAYIN', got_cit.type)
+        self.assertEqual('REGULAR', got_cit.nature)
+
+    def test_RecurringPaymentPayPalMIT(self):
+        user = self.get_john(True)
+        wallet = self.get_johns_wallet(True)
+
+        recurring = RecurringPayInRegistration()
+        recurring.author = user
+        recurring.credited_wallet = wallet
+        recurring.first_transaction_debited_funds = Money(1000, "EUR")
+        recurring.first_transaction_fees = Money(0, "EUR")
+        address = Address()
+        address.address_line_1 = "Big Street"
+        address.address_line_2 = "no 2 ap 6"
+        address.country = "FR"
+        address.city = "Lyon"
+        address.postal_code = "68400"
+        recurring.billing = Billing(first_name="John", last_name="Doe", address=address)
+        recurring.shipping = Shipping(first_name="John", last_name="Doe", address=address)
+        recurring.payment_type = constants.PAYIN_PAYMENT_TYPE.paypal
+        created_recurring = recurring.save()
+        self.assertIsNotNone(created_recurring)
+
+        mit = RecurringPayPalPayInMIT()
+        mit.recurring_payin_registration_id = created_recurring['id']
+        mit.return_url = 'http://example.com'
+        mit.cancel_url = 'http://example.net'
+        mit.shipping_preference = constants.SHIPPING_PREFERENCE_CHOICES.set_provided_address
+        mit.reference = 'abcd-efgh-ijkl'
+        mit.statement_descriptor = "Example123"
+        mit.debited_funds = Money()
+        mit.debited_funds.amount = 1000
+        mit.debited_funds.currency = "EUR"
+        mit.fees = Money()
+        mit.fees.amount = 0
+        mit.fees.currency = "EUR"
+
+        line_item = LineItem()
+        line_item.name = "test"
+        line_item.quantity = 1
+        line_item.unit_amount = 1000
+        line_item.tax_amount = 0
+        line_item.description = "test"
+        line_item.category = "DIGITAL_GOODS"
+        mit.line_items = [line_item]
+
+        created_mit = mit.save()
+        self.assertIsNotNone(created_mit)
+        mit_id = created_mit.get('id')
+
+        got_mit = RecurringPayPalPayInMIT.get(mit_id)
+        self.assertIsNotNone(got_mit)
+        self.assertIsInstance(got_mit, RecurringPayPalPayInMIT)
+        self.assertEqual('CREATED', got_mit.status)
+        self.assertEqual('PAYPAL', got_mit.payment_type)
+        self.assertEqual('WEB', got_mit.execution_type)
+        self.assertEqual('PAYIN', got_mit.type)
+        self.assertEqual('REGULAR', got_mit.nature)
+
     def test_RecurringPayment_Update(self):
         user = self.get_john(True)
         wallet = self.get_johns_wallet(True)
@@ -1090,6 +1217,48 @@ class PayInsTestLive(BaseTestLive):
         self.assertIsNotNone(result)
 
     @unittest.skip("can't be tested yet")
+    def test_GooglePay_GetPaymentMethodMetadata(self):
+        user = self.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'EUR'
+        credited_wallet.description = 'WALLET IN EUR'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        pay_in = GooglepayPayIn()
+        pay_in.author = user
+        pay_in.credited_user = user
+        pay_in.credited_wallet = credited_wallet
+        pay_in.fees = Money()
+        pay_in.fees.amount = 1
+        pay_in.fees.currency = "EUR"
+        pay_in.debited_funds = Money()
+        pay_in.debited_funds.amount = 199
+        pay_in.debited_funds.currency = "EUR"
+        payment_data = GooglepayPaymentData()
+        # can't be tested
+        payment_data.transaction_id = "placeholder"
+        payment_data.network = 'VISA'
+        payment_data.token_data = "placeholder"
+        pay_in.payment_data = payment_data
+        pay_in.statement_descriptor = 'Python'
+        pay_in.payment_type = constants.PAYIN_PAYMENT_TYPE.googlepay
+        pay_in.execution_type = constants.EXECUTION_TYPE_CHOICES.direct
+        result = pay_in.save()
+
+        payment_method_metadata = PaymentMethodMetadata()
+        payment_method_metadata.type = 'GOOGLE_PAY'
+        payment_method_metadata.token = result.payment_type.token_data
+        result_metadata = payment_method_metadata.save()
+
+        self.assertIsNotNone(result_metadata)
+        self.assertIsNotNone(result_metadata['bin_data'])
+        self.assertIsNotNone(result_metadata['bin_data'][0])
+        self.assertIsNotNone(result_metadata['issuer_country_code'])
+        self.assertIsNotNone(result_metadata['issuing_bank'])
+
     def test_card_preauthorized_deposit_payin(self):
         deposit = self.create_new_deposit()
 
@@ -1238,6 +1407,7 @@ class PayInsTestLive(BaseTestLive):
         pay_in.debited_funds.currency = "EUR"
         pay_in.return_url = "http://mangopay.com"
         pay_in.shipping_preference = "NO_SHIPPING"
+        pay_in.cancel_url = "http://mangopay.com"
 
         line_item = LineItem()
         line_item.name = "test"
@@ -1245,6 +1415,7 @@ class PayInsTestLive(BaseTestLive):
         line_item.unit_amount = 1000
         line_item.tax_amount = 0
         line_item.description = "test"
+        line_item.category = "DIGITAL_GOODS"
         pay_in.line_items = [line_item]
 
         pay_in.statement_descriptor = "test"
@@ -1347,19 +1518,7 @@ class PayInsTestLive(BaseTestLive):
         credited_wallet.description = 'WALLET IN PLN'
         credited_wallet = Wallet(**credited_wallet.save())
 
-        pay_in = BlikPayIn()
-        pay_in.author = user
-        pay_in.credited_wallet = credited_wallet
-        pay_in.fees = Money()
-        pay_in.fees.amount = 300
-        pay_in.fees.currency = 'PLN'
-        pay_in.debited_funds = Money()
-        pay_in.debited_funds.amount = 1000
-        pay_in.debited_funds.currency = 'PLN'
-        pay_in.statement_descriptor = 'test'
-        pay_in.return_url = 'https://example.com?transactionId=wt_57b8f69d-cbcc-4202-9a4f-9a3f3668240b'
-        pay_in.redirect_url = 'https://r3.girogate.de/ti/dumbdummy?tx=140079495229&rs=oHkl4WvsgwtWpMptWpqWlFa90j0EzzO9&cs=e43baf1ae4a556dfb823fd304acc408580c193e04c1a9bcb26699b4185393b05'
-        pay_in.tag = 'Blik tag'
+        pay_in = new_blik(user, credited_wallet)
 
         result = BlikPayIn(**pay_in.save())
         fetched = BlikPayIn().get(result.id)
@@ -1373,6 +1532,34 @@ class PayInsTestLive(BaseTestLive):
         self.assertEqual("WEB", result.execution_type)
         self.assertEqual("BLIK", result.payment_type)
         self.assertEqual("PAYIN", result.type)
+
+    def test_PayIns_BlikWebWithCode_Create(self):
+        user = BaseTestLive.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'PLN'
+        credited_wallet.description = 'WALLET IN PLN'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        pay_in = new_blik(user, credited_wallet)
+        pay_in.code = '777365'
+        pay_in.ip_address = '159.180.248.187'
+        pay_in.browser_info = BaseTest.get_browser_info()
+
+        result = BlikPayIn(**pay_in.save())
+        fetched = BlikPayIn().get(result.id)
+
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(fetched)
+        self.assertEqual(result.id, fetched.id)
+
+        self.assertEqual("CREATED", result.status)
+        self.assertEqual("BLIK", result.payment_type)
+        self.assertIsNotNone(result.code)
+        self.assertIsNotNone(result.ip_address)
+        self.assertIsNotNone(result.browser_info)
 
     def test_PayIns_KlarnaWeb_Create(self):
         user = BaseTestLive.get_john(True)
@@ -1475,7 +1662,6 @@ class PayInsTestLive(BaseTestLive):
         self.assertEqual("IDEAL", result.payment_type)
         self.assertEqual("PAYIN", result.type)
 
-
     def test_PayIns_GiropayWeb_Create(self):
         user = BaseTestLive.get_john(True)
 
@@ -1512,6 +1698,114 @@ class PayInsTestLive(BaseTestLive):
         self.assertEqual("GIROPAY", result.payment_type)
         self.assertEqual("PAYIN", result.type)
 
+    def test_PayIns_SwishWeb_Create(self):
+        user = BaseTestLive.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'SEK'
+        credited_wallet.description = 'WALLET IN SEK'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        pay_in = SwishPayIn()
+        pay_in.author = user
+        pay_in.credited_wallet = credited_wallet
+        pay_in.fees = Money()
+        pay_in.fees.amount = 0
+        pay_in.fees.currency = 'SEK'
+        pay_in.debited_funds = Money()
+        pay_in.debited_funds.amount = 100
+        pay_in.debited_funds.currency = 'SEK'
+        pay_in.return_url = 'https://mangopay.com/'
+        pay_in.tag = 'Swish PayIn'
+
+        result = SwishPayIn(**pay_in.save())
+        fetched = SwishPayIn().get(result.id)
+
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(fetched)
+        self.assertEqual(result.id, fetched.id)
+
+        self.assertEqual("CREATED", result.status)
+        self.assertEqual("REGULAR", result.nature)
+        self.assertEqual("WEB", result.execution_type)
+        self.assertEqual("SWISH", result.payment_type)
+        self.assertEqual("PAYIN", result.type)
+
+    def test_PayIns_TwintWeb_Create(self):
+        user = BaseTestLive.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'CHF'
+        credited_wallet.description = 'WALLET IN CHF'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        pay_in = TwintPayIn()
+        pay_in.author = user
+        pay_in.credited_wallet = credited_wallet
+        pay_in.fees = Money()
+        pay_in.fees.amount = 0
+        pay_in.fees.currency = 'CHF'
+        pay_in.debited_funds = Money()
+        pay_in.debited_funds.amount = 100
+        pay_in.debited_funds.currency = 'CHF'
+        pay_in.return_url = 'https://mangopay.com/'
+        pay_in.tag = 'Twint PayIn'
+
+        result = TwintPayIn(**pay_in.save())
+        fetched = TwintPayIn().get(result.id)
+
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(fetched)
+        self.assertEqual(result.id, fetched.id)
+
+        self.assertEqual("CREATED", result.status)
+        self.assertEqual("REGULAR", result.nature)
+        self.assertEqual("WEB", result.execution_type)
+        self.assertEqual("TWINT", result.payment_type)
+        self.assertEqual("PAYIN", result.type)
+
+    def test_PayIns_BancontactWeb_Create(self):
+        user = BaseTestLive.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'EUR'
+        credited_wallet.description = 'WALLET IN EUR'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        pay_in = BancontactPayIn()
+        pay_in.author = user
+        pay_in.credited_wallet = credited_wallet
+        pay_in.fees = Money()
+        pay_in.fees.amount = 200
+        pay_in.fees.currency = 'EUR'
+        pay_in.debited_funds = Money()
+        pay_in.debited_funds.amount = 2000
+        pay_in.debited_funds.currency = 'EUR'
+        pay_in.statement_descriptor = 'test'
+        pay_in.return_url = 'https://mangopay.com/'
+        pay_in.tag = 'Bancontact PayIn'
+        pay_in.recurring = True
+        pay_in.culture = 'FR'
+
+        result = BancontactPayIn(**pay_in.save())
+        fetched = BancontactPayIn().get(result.id)
+
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(fetched)
+        self.assertEqual(result.id, fetched.id)
+
+        self.assertEqual("CREATED", result.status)
+        self.assertEqual("REGULAR", result.nature)
+        self.assertEqual("WEB", result.execution_type)
+        self.assertEqual("BCMC", result.payment_type)
+        self.assertEqual("PAYIN", result.type)
+
     def test_PayIns_Legacy_IdealWeb_Create(self):
         user = BaseTestLive.get_john(True)
 
@@ -1534,7 +1828,6 @@ class PayInsTestLive(BaseTestLive):
         payin.culture = 'fr'
         payin.bic = 'RBRBNL21'
         result = CardWebPayIn(**payin.save())
-
 
         self.assertIsNotNone(result)
         self.assertIsNotNone(result.bank_name)
@@ -1562,7 +1855,7 @@ class PayInsTestLive(BaseTestLive):
         data = {
             'cardNumber': '4970107111111119',
             'cardCvx': '123',
-            'cardExpirationDate': '1224',
+            'cardExpirationDate': '1229',
             'accessKeyRef': card_registration.access_key,
             'data': card_registration.preregistration_data
         }
@@ -1628,6 +1921,7 @@ class PayInsTestLive(BaseTestLive):
         pay_in.secure_mode_return_url = "http://www.example.com/"
         pay_in.ip_address = "2001:0620:0000:0000:0211:24FF:FE80:C12C"
         pay_in.browser_info = BaseTest.get_browser_info()
+        pay_in.payment_category = 'TelephoneOrder'
 
         address = Address()
         address.address_line_1 = "Big Street"
@@ -1643,6 +1937,57 @@ class PayInsTestLive(BaseTestLive):
         card_info = result['card_info']
         self.assertIsNotNone(card_info)
         self.assertIsInstance(card_info, CardInfo)
+        self.assertEqual('TelephoneOrder', result['payment_category'])
+
+    def test_PayIns_CardDirect_GetPaymentMethodMetadata(self):
+        user = BaseTestLive.get_john(True)
+        debited_wallet = BaseTestLive.get_johns_wallet(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'EUR'
+        credited_wallet.description = 'WALLET IN EUR'
+        credited_wallet = Wallet(**credited_wallet.save())
+        card = BaseTestLive.get_johns_card(True)
+
+        pay_in = DirectPayIn()
+        pay_in.author = user
+        pay_in.debited_wallet = debited_wallet
+        pay_in.credited_wallet = credited_wallet
+        pay_in.card = card
+        pay_in.fees = Money()
+        pay_in.fees.amount = 100
+        pay_in.fees.currency = "EUR"
+        pay_in.debited_funds = Money()
+        pay_in.debited_funds.amount = 1000
+        pay_in.debited_funds.currency = "EUR"
+        pay_in.secure_mode_return_url = "http://www.example.com/"
+        pay_in.ip_address = "2001:0620:0000:0000:0211:24FF:FE80:C12C"
+        pay_in.browser_info = BaseTest.get_browser_info()
+
+        address = Address()
+        address.address_line_1 = "Big Street"
+        address.address_line_2 = "no 2 ap 6"
+        address.country = "FR"
+        address.city = "Lyon"
+        address.postal_code = "68400"
+        pay_in.billing = Billing(first_name="John", last_name="Doe", address=address)
+
+        result = pay_in.save()
+
+        self.assertIsNotNone(result)
+        card_info = result['card_info']
+        payment_method_metadata = PaymentMethodMetadata()
+        payment_method_metadata.type = 'BIN'
+        payment_method_metadata.bin = card_info.Bin
+        result_metadata = payment_method_metadata.save()
+
+        self.assertIsNotNone(result_metadata)
+        self.assertIsNotNone(result_metadata['bin_data'])
+        self.assertIsNotNone(result_metadata['bin_data'][0])
+        self.assertIsNotNone(result_metadata['issuer_country_code'])
+        self.assertIsNotNone(result_metadata['issuing_bank'])
 
     def test_RecurringPayment_CheckCardInfo(self):
         user = self.get_john(True)
@@ -1703,3 +2048,72 @@ class PayInsTestLive(BaseTestLive):
         mit_card_info = created_mit['card_info']
         self.assertIsNotNone(mit_card_info)
         self.assertIsInstance(mit_card_info, CardInfo)
+
+    def test_PayIns_Payconiq_Web_Create(self):
+        user = BaseTestLive.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'EUR'
+        credited_wallet.description = 'WALLET IN EUR'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        payin = PayconiqV2PayIn()
+        payin.credited_wallet = credited_wallet
+        payin.author = user
+        payin.debited_funds = Money(amount=10000, currency='EUR')
+        payin.fees = Money(amount=0, currency='EUR')
+        payin.return_url = 'https://test.com'
+        payin.country = 'BE'
+        result = PayconiqV2PayIn(**payin.save())
+
+        self.assertIsNotNone(result)
+        self.assertEqual("CREATED", result.status)
+        self.assertEqual("REGULAR", result.nature)
+        self.assertEqual("WEB", result.execution_type)
+        self.assertEqual("PAYCONIQ", result.payment_type)
+        self.assertIsNotNone(result.deep_link_url)
+        self.assertIsNotNone(result.qr_code_url)
+
+    def test_PayIns_PayByBankWeb_Create(self):
+        user = BaseTestLive.get_john(True)
+
+        # create wallet
+        credited_wallet = Wallet()
+        credited_wallet.owners = (user,)
+        credited_wallet.currency = 'EUR'
+        credited_wallet.description = 'WALLET IN EUR'
+        credited_wallet = Wallet(**credited_wallet.save())
+
+        pay_in = PayByBankPayIn()
+        pay_in.author = user
+        pay_in.credited_wallet = credited_wallet
+        pay_in.fees = Money()
+        pay_in.fees.amount = 0
+        pay_in.fees.currency = 'EUR'
+        pay_in.debited_funds = Money()
+        pay_in.debited_funds.amount = 500
+        pay_in.debited_funds.currency = 'EUR'
+        pay_in.statement_descriptor = 'test'
+        pay_in.return_url = 'https://mangopay.com/'
+        pay_in.country = 'DE'
+        pay_in.iban = 'DE03500105177564668331'
+        pay_in.bic = 'AACSDE33'
+        pay_in.scheme = 'SEPA_INSTANT_CREDIT_TRANSFER'
+        pay_in.bank_name = 'de-demobank-open-banking-embedded-templates'
+        pay_in.culture = 'EN'
+        pay_in.payment_flow = 'WEB'
+
+        result = PayByBankPayIn(**pay_in.save())
+        fetched = PayByBankPayIn().get(result.id)
+
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(fetched)
+        self.assertEqual(result.id, fetched.id)
+
+        self.assertEqual("CREATED", result.status)
+        self.assertEqual("REGULAR", result.nature)
+        self.assertEqual("WEB", result.execution_type)
+        self.assertEqual("PAY_BY_BANK", result.payment_type)
+        self.assertEqual("PAYIN", result.type)

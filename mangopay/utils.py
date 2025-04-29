@@ -53,7 +53,10 @@ class Money(object):
 
     def __init__(self, amount="0", currency=None):
         try:
-            self.amount = decimal.Decimal(amount)
+            if amount is not None:
+                self.amount = decimal.Decimal(amount)
+            else:
+                self.amount = None
         except decimal.InvalidOperation:
             raise ValueError("amount value could not be converted to "
                              "Decimal(): '{}'".format(amount))
@@ -257,6 +260,17 @@ class FallbackReason(object):
 
 
 @add_camelcase_aliases
+class PaymentRef(object):
+    def __init__(self, reason_type=None, reference_id=None):
+        self.reason_type = reason_type
+        self.reference_id = reference_id
+
+    def __str__(self):
+        return 'PaymentRef: %s' % \
+            (self.reason_type, self.reference_id)
+
+
+@add_camelcase_aliases
 class InstantPayout(object):
     def __init__(self, is_reachable=None, unreachable_reason=None):
         self.is_reachable = is_reachable
@@ -386,7 +400,8 @@ class GooglepayPaymentData(object):
 class ReportTransactionsFilters(object):
     def __init__(self, before_date=None, after_date=None, transaction_type=None, status=None, nature=None,
                  min_debited_funds_amount=None, min_debited_funds_currency=None, max_debited_funds_amount=None,
-                 max_debited_funds_currency=None, author_id=None, wallet_id=None):
+                 max_debited_funds_currency=None, author_id=None, wallet_id=None, result_code=None,
+                 min_fees_amount=None, min_fees_currency=None, max_fees_amount=None, max_fees_currency=None):
         self.before_date = before_date
         self.after_date = after_date
         self.transaction_type = transaction_type
@@ -398,6 +413,11 @@ class ReportTransactionsFilters(object):
         self.max_debited_funds_currency = max_debited_funds_currency
         self.author_id = author_id
         self.wallet_id = wallet_id
+        self.result_code = result_code
+        self.min_fees_amount = min_fees_amount
+        self.min_fees_currency = min_fees_currency
+        self.max_fees_amount = max_fees_amount
+        self.max_fees_currency = max_fees_currency
 
     def __eq__(self, other):
         if isinstance(other, ReportTransactionsFilters):
@@ -411,7 +431,12 @@ class ReportTransactionsFilters(object):
                     (self.max_debited_funds_amount == other.max_debited_funds_amount) and
                     (self.max_debited_funds_currency == other.max_debited_funds_currency) and
                     (self.author_id == other.author_id) and
-                    (self.wallet_id == other.wallet_id)
+                    (self.wallet_id == other.wallet_id) and
+                    (self.result_code == other.result_code) and
+                    (self.min_fees_amount == other.min_fees_amount) and
+                    (self.min_fees_currency == other.min_fees_currency) and
+                    (self.max_fees_amount == other.max_fees_amount) and
+                    (self.max_fees_currency == other.max_fees_currency)
                     )
             return stat
         return False
@@ -926,16 +951,17 @@ class PayinsLinked(object):
 
 
 class LineItem(object):
-    def __init__(self, name=None, quantity=None, unit_amount=None, tax_amount=None, description=None):
+    def __init__(self, name=None, quantity=None, unit_amount=None, tax_amount=None, description=None, category=None):
         self.name = name
         self.quantity = quantity
         self.unit_amount = unit_amount
         self.tax_amount = tax_amount
         self.description = description
+        self.category = category
 
     def __str__(self):
-        return 'LineItem: %s %s %s %s %s' % \
-            (self.name, self.quantity, self.unit_amount, self.tax_amount, self.description)
+        return 'LineItem: %s %s %s %s %s %s' % \
+            (self.name, self.quantity, self.unit_amount, self.tax_amount, self.description, self.category)
 
     def to_api_json(self):
         return {
@@ -943,7 +969,8 @@ class LineItem(object):
             "Quantity": self.quantity,
             "UnitAmount": self.unit_amount,
             "TaxAmount": self.tax_amount,
-            "Description": self.description
+            "Description": self.description,
+            "Category": self.category
         }
 
 
@@ -954,8 +981,14 @@ class ConversionRate(object):
         self.market_rate = market_rate
 
     def __str__(self):
-        return 'Conversion rate: %s' % \
+        return 'Conversion rate: %s %s' % \
             (self.client_rate, self.market_rate)
+
+    def to_api_json(self):
+        return {
+            "ClientRate": self.client_rate,
+            "MarketRate": self.market_rate
+        }
 
 
 @add_camelcase_aliases
@@ -975,5 +1008,290 @@ class CardInfo(object):
         self.sub_type = sub_type
 
     def __str__(self):
-        return 'Card info: %s' % \
+        return 'Card info: %s %s %s %s %s %s' % \
             (self.bin, self.issuing_bank, self.issuer_country_code, self.type, self.brand, self.sub_type)
+
+    def to_api_json(self):
+        return {
+            "BIN": self.bin,
+            "IssuingBank": self.issuing_bank,
+            "IssuerCountryCode": self.issuer_country_code,
+            "Type": self.type,
+            "Brand": self.brand,
+            "SubType": self.sub_type
+        }
+
+
+class PayPalTrackingInformation(object):
+    def __init__(self, tracking_number=None, carrier=None, notify_buyer=None):
+        self.tracking_number = tracking_number
+        self.carrier = carrier
+        self.notify_buyer = notify_buyer
+
+    def __str__(self):
+        return 'PayPalTrackingInformation: %s %s %s' % \
+            (self.tracking_number, self.carrier, self.notify_buyer)
+
+    def to_api_json(self):
+        return {
+            "TrackingNumber": self.tracking_number,
+            "Carrier": self.carrier,
+            "NotifyBuyer": self.notify_buyer
+        }
+
+
+class LocalAccountDetails(object):
+    def __init__(self, address=None, account=None):
+        self.address = address
+        self.account = account
+
+    def __str__(self):
+        return 'LocalAccountDetails: %s %s' % \
+            (self.address, self.account)
+
+    def to_api_json(self):
+        return {
+            "Address": self.address,
+            "Account": self.account
+        }
+
+
+class InternationalAccountDetails(object):
+    def __init__(self, address=None, account=None):
+        self.address = address
+        self.account = account
+
+    def __str__(self):
+        return 'InternationalAccountDetails: %s %s' % \
+            (self.address, self.account)
+
+    def to_api_json(self):
+        return {
+            "Address": self.address,
+            "Account": self.account
+        }
+
+
+class VirtualAccountCapabilities(object):
+    def __init__(self, local_pay_in_available=None, international_pay_in_available=None, currencies=None):
+        self.local_pay_in_available = local_pay_in_available
+        self.international_pay_in_available = international_pay_in_available
+        self.currencies = currencies
+
+    def __str__(self):
+        return 'VirtualAccountCapabilities: %s %s %s' % \
+            (self.local_pay_in_available, self.international_pay_in_available, self.currencies)
+
+    def to_api_json(self):
+        return {
+            "LocalPayinAvailable": self.local_pay_in_available,
+            "InternationalPayinAvailable": self.international_pay_in_available,
+            "Currencies": self.currencies
+        }
+
+
+@add_camelcase_aliases
+class PendingUserAction(object):
+    def __init__(self, redirect_url=None):
+        self.redirect_url = redirect_url
+
+    def __str__(self):
+        return 'PendingUserAction: %s' % self.redirect_url
+
+    def __eq__(self, other):
+        if isinstance(other, PendingUserAction):
+            stat = (self.redirect_url == other.redirect_url)
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "RedirectUrl": self.redirect_url
+        }
+
+
+@add_camelcase_aliases
+class LegalRepresentative(object):
+    def __init__(self, first_name=None, last_name=None, birthday=None, nationality=None, country_of_residence=None,
+                 email=None, phone_number=None, phone_number_country=None):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.birthday = birthday
+        self.nationality = nationality
+        self.country_of_residence = country_of_residence
+        self.email = email
+        self.phone_number = phone_number
+        self.phone_number_country = phone_number_country
+
+    def __str__(self):
+        return 'LegalRepresentative: %s , %s, %s, %s, %s, %s, %s, %s' % \
+            (self.first_name, self.last_name, self.birthday, self.nationality,
+             self.country_of_residence, self.email, self.phone_number, self.phone_number_country)
+
+    def __eq__(self, other):
+        if isinstance(other, LegalRepresentative):
+            stat = ((self.first_name == other.first_name) and
+                    (self.last_name == other.last_name) and
+                    (self.birthday == other.birthday) and
+                    (self.nationality == other.nationality) and
+                    (self.country_of_residence == other.country_of_residence) and
+                    (self.email == other.email) and
+                    (self.phone_number == other.phone_number) and
+                    (self.phone_number_country == other.phone_number_country))
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "FirstName": self.first_name,
+            "LastName": self.last_name,
+            "Birthday": self.birthday,
+            "Nationality": self.nationality,
+            "CountryOfResidence": self.country_of_residence,
+            "Email": self.email,
+            "PhoneNumber": self.phone_number,
+            "PhoneNumberCountry": self.phone_number_country
+        }
+
+
+@add_camelcase_aliases
+class IndividualRecipient(object):
+    def __init__(self, first_name=None, last_name=None, address=None):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.address = address
+
+    def __str__(self):
+        return 'IndividualRecipient: %s , %s, %s' % \
+            (self.first_name, self.last_name, self.address)
+
+    def __eq__(self, other):
+        if isinstance(other, IndividualRecipient):
+            stat = ((self.first_name == other.first_name) and
+                    (self.last_name == other.last_name) and
+                    (self.address == other.address))
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "FirstName": self.first_name,
+            "LastName": self.last_name,
+            "Address": self.address
+        }
+
+
+@add_camelcase_aliases
+class BusinessRecipient(object):
+    def __init__(self, business_name=None, address=None):
+        self.business_name = business_name
+        self.address = address
+
+    def __str__(self):
+        return 'BusinessRecipient: %s , %s' % \
+            (self.business_name, self.address)
+
+    def __eq__(self, other):
+        if isinstance(other, BusinessRecipient):
+            stat = ((self.business_name == other.business_name) and
+                    (self.address == other.address))
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "BusinessName": self.business_name,
+            "Address": self.address
+        }
+
+
+@add_camelcase_aliases
+class RecipientPropertySchema(object):
+    def __init__(self, required=None, max_length=None, min_length=None, pattern=None, allowed_values=None, label=None,
+                 end_user_display=None):
+        self.required = required
+        self.max_length = max_length
+        self.min_length = min_length
+        self.pattern = pattern
+        self.allowed_values = allowed_values
+        self.label = label
+        self.end_user_display = end_user_display
+
+    def __str__(self):
+        return 'RecipientPropertySchema: %s , %s, %s, %s, %s, %s, %s' % \
+            (self.required, self.max_length, self.min_length, self.pattern, self.allowed_values, self.label,
+             self.end_user_display)
+
+    def __eq__(self, other):
+        if isinstance(other, RecipientPropertySchema):
+            stat = ((self.required == other.required) and
+                    (self.max_length == other.max_length) and
+                    (self.min_length == other.min_length) and
+                    (self.pattern == other.pattern) and
+                    (self.allowed_values == other.allowed_values) and
+                    (self.label == other.label) and
+                    (self.end_user_display == other.end_user_display))
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "Required": self.required,
+            "MaxLength": self.max_length,
+            "MinLength": self.min_length,
+            "Pattern": self.pattern,
+            "AllowedValues": self.allowed_values,
+            "Label": self.label,
+            "EndUserDisplay": self.end_user_display
+        }
+
+
+@add_camelcase_aliases
+class IndividualRecipientPropertySchema(object):
+    def __init__(self, first_name=None, last_name=None, address=None):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.address = address
+
+    def __str__(self):
+        return 'IndividualRecipientPropertySchema: %s , %s, %s' % \
+            (self.first_name, self.last_name, self.address)
+
+    def __eq__(self, other):
+        if isinstance(other, IndividualRecipientPropertySchema):
+            stat = ((self.first_name == other.first_name) and
+                    (self.last_name == other.last_name) and
+                    (self.address == other.address))
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "FirstName": self.first_name,
+            "LastName": self.last_name,
+            "Address": self.address
+        }
+
+
+@add_camelcase_aliases
+class BusinessRecipientPropertySchema(object):
+    def __init__(self, business_name=None, address=None):
+        self.business_name = business_name
+        self.address = address
+
+    def __str__(self):
+        return 'BusinessRecipientPropertySchema: %s , %s' % \
+            (self.business_name, self.address)
+
+    def __eq__(self, other):
+        if isinstance(other, BusinessRecipientPropertySchema):
+            stat = ((self.business_name == other.business_name) and
+                    (self.address == other.address))
+            return stat
+        return False
+
+    def to_api_json(self):
+        return {
+            "BusinessName": self.business_name,
+            "Address": self.address
+        }
