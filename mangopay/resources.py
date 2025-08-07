@@ -135,11 +135,11 @@ class User(BaseModel):
         return select.get(user_id, *args, **kwargs)
 
     @staticmethod
-    def enroll_sca(user_id):
+    def enroll_sca(user_id, handler):
         insert = InsertQuery(ScaEnrollment)
         insert.insert_query['id'] = user_id
         insert.identifier = 'USERS_ENROLL_SCA'
-        result = insert.execute()
+        result = insert.execute(handler=handler)
         return ScaEnrollment(**result)
 
     def get_emoney(self, *args, **kwargs):
