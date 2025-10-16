@@ -75,10 +75,26 @@ class DisputeTest(BaseTestLive):
         self.assertIsNotNone(disputes)
         self.assertTrue(disputes)
 
+    def test_GetDisputesForPayIn(self):
+        dispute = None
+
+        for d in self._client_disputes :
+            if d.initial_transaction_id is not None:
+                dispute = d
+                break
+
+        self.assertIsNotNone(dispute, 'Cannot test getting disputes for wallet because there\'s no dispute with transaction ID in the disputes list.')
+        pay_in = PayIn.get(dispute.initial_transaction_id)
+
+        self.assertIsNotNone(pay_in)
+
+        result = pay_in.disputes.all()
+
+        self.assertIsNotNone(result)
+
     def test_GetDisputesPendingSettlement(self):
         disputes_pending = Dispute.get_pending_settlement()
-
-        self.assertTrue(disputes_pending)
+        self.assertTrue(len(disputes_pending.data) > 0)
 
 
     def test_CreateDisputeDocument(self):
@@ -348,3 +364,18 @@ class DisputeTest(BaseTestLive):
         self.assertTrue('status' in result)
 
         self.assertEquals(result['status'], 'SUBMITTED')
+
+    def test_get_transactions(self):
+        dispute = None
+        for d in self._client_disputes:
+            if d.status in ('PENDING_CLIENT_ACTION', 'REOPENED_PENDING_CLIENT_ACTION'):
+                dispute = d
+                break
+
+        self.assertIsNotNone(
+            dispute,
+            "Cannot test closing dispute because there's no available disputes with expected status in the disputes list."
+        )
+
+        transactions = Dispute.get_transactions(dispute.id)
+        self.assertTrue(transactions.page == 1)

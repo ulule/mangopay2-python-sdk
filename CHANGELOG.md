@@ -1,3 +1,158 @@
+## [3.50.0] - 2025-10-01
+### Added
+- [Verification of Payee (VOP)](https://docs.mangopay.com/guides/vop/recipients-payouts) API response fields (`RecipientVerificationOfPayee` and sub-properties) on the endpoints [GET View a Recipient](https://docs.mangopay.com/api-reference/recipients/view-recipient), [POST Create a Recipient](https://docs.mangopay.com/api-reference/recipients/create-recipient), [POST Create a Payout](https://docs.mangopay.com/api-reference/payouts/create-payout) ([API release note](https://docs.mangopay.com/release-notes/api/2025-09-30), #445)
+- Support for the [POST Cancel an Intent](https://docs.mangopay.com/api-reference/intents/cancel-intent) endpoint for [Echo](https://docs.mangopay.com/guides/echo), Mangopay's solution for platforms working with another third-party PSP for funds acquisition (#453) 
+- Support for [POST Submit data for a PayPal PayIn](https://docs.mangopay.com/api-reference/paypal/submit-data-paypal-payin) endpoint (#450)
+
+## [3.49.4] - 2025-09-23
+### Added
+- Webhook event types for [Echo](https://docs.mangopay.com/guides/echo), Mangopay's solution for third-party PSP integrations: `INTENT_AUTHORIZED`,`INTENT_CAPTURED`,`INTENT_REFUNDED`,`INTENT_REFUND_REVERSED`,`INTENT_DISPUTE_CREATED`,`INTENT_DISPUTE_DEFENDED`,`INTENT_DISPUTE_WON`,`INTENT_DISPUTE_LOST`,`INTENT_SETTLED_NOT_PAID`,`INTENT_PAID`,`SPLIT_CREATED`,`SPLIT_PENDING_FUNDS_RECEPTION`,`SPLIT_AVAILABLE`,`SPLIT_REJECTED`,`SPLIT_REVERSED` #448  
+- Support for `VirtualAccountPurpose` on Banking Alias object #451 
+
+## [3.49.3] - 2025-09-08
+### Added
+- Support for `ProfilingAttemptReference` on all payment methods
+
+## [3.49.2] - 2025-09-03
+### Added
+- Support for missing fields on TransferRefund #444 (thank you @obarahona10 #377) 
+
+### Changed
+- Casing of 3 fields to harmonise on snake_case #443 ⚠️ **Breaking change** for Conversion `quote_Id`, Document(KYC) `processed_date`, and Ubo `is_active` (thanks @samitnuk #268) 
+- OAuth token refresh buffer before expiry updated to 30s #446 
+- Updated testing library to pynose (thank you @nandoks #441)
+
+### Fixed
+- Tests
+
+## [3.49.1] - 2025-08-14
+### Added
+- Support for [POST Create a Quoted Conversion between Client Wallets](https://docs.mangopay.com/api-reference/conversions/create-quoted-conversion-client-wallets) and [POST Create an Instant Conversion between Client Wallets](https://docs.mangopay.com/api-reference/conversions/create-instant-conversion-client-wallets) #437 
+- Support for [POST Create a Bank Wire to the Repudiation Wallet](https://docs.mangopay.com/api-reference/dispute-settlement/create-bank-wire-payin-to-repudiation-wallet) #438 
+- Support for [GET List Disputes pending settlement](https://docs.mangopay.com/api-reference/disputes/list-disputes-settlement) #439 
+
+## [3.49.0] - 2025-08-07
+### Added
+Support for new Splits endpoints for Echo (#434, [API release note](https://docs.mangopay.com/release-notes/api/2025-07-16)):
+- [PUT Update a Split of an Intent](https://docs.mangopay.com/api-reference/intents/update-intent-split)
+- [POST Execute a Split of an Intent](https://docs.mangopay.com/api-reference/intents/execute-intent-split)
+- [POST Reverse the Split of an Intent](https://docs.mangopay.com/api-reference/intents/reverse-intent-split)
+- [GET View a Split of an Intent](https://docs.mangopay.com/api-reference/intents/view-intent-split)
+
+New `ReportTypes` for Echo (#435, [API release note](https://docs.mangopay.com/release-notes/api/2025-08-06))):
+- `ECHO_INTENT`
+- `ECHO_INTENT_ACTION`
+- `ECHO_SETTLEMENT`
+- `ECHO_SPLIT`
+
+## [3.48.1] - 2025-07-28
+### Added
+- `Sku` parameter on LineItem, for [Klarna PayIns](https://docs.mangopay.com/api-reference/klarna/create-klarna-payin)
+- handle new endpoint [View supported banks for Pay by Bank](https://docs.mangopay.com/api-reference/pay-by-bank/view-supported-banks-pay-by-bank), to enable presentation of banks to user before Pay by Bank payment request
+
+## [3.48.0] - 2025-07-18
+### Added
+Endpoints for [Mangopay Echo](https://docs.mangopay.com/guides/echo), a solution for platforms working with another third-party PSP for funds acquisition (including via the Mirakl Connector) #429 : 
+- [POST Create an Intent](https://docs.mangopay.com/api-reference/intents/create-intent)
+- [GET View an Intent](https://docs.mangopay.com/api-reference/intents/view-intent)
+- [POST Create a Capture for an Intent](https://docs.mangopay.com/api-reference/intents/create-intent-capture)
+- [POST Create a Settlement](https://docs.mangopay.com/api-reference/settlements/create-settlement)
+- [PUT Update a Settlement](https://docs.mangopay.com/api-reference/settlements/update-settlement)
+- [GET View a Settlement](https://docs.mangopay.com/api-reference/settlements/view-settlement)
+- [POST Create a Split of an Intent](https://docs.mangopay.com/api-reference/intents/create-intent-split)
+
+## [3.47.0] - 2025-07-02
+### Added
+- New endpoint [POST Create a Bizum PayIn](https://docs.mangopay.com/api-reference/bizum/create-bizum-payin)
+- New webhook event types for SCA enrollment ([API release note](https://docs.mangopay.com/release-notes/api/2025-06-23)), note that these are triggered on enrollment not authentication:
+  - `SCA_ENROLLMENT_SUCCEEDED`
+  - `SCA_ENROLLMENT_FAILED`
+  - `SCA_ENROLLMENT_EXPIRED`
+- New webhook event types for `UserCategory` change ([API release note](https://docs.mangopay.com/release-notes/api/2025-06-23) ):
+  - `USER_CATEGORY_UPDATED_TO_OWNER`
+  - `USER_CATEGORY_UPDATED_TO_PAYER`
+  - `USER_CATEGORY_UPDATED_TO_PLATFORM`
+- Support for `PLATFORM` value to `UserCategory` enum
+- Support for [GET List Transactions for a Card Fingerprint](https://docs.mangopay.com/api-reference/transactions/list-transactions-card-fingerprint)
+- Support for [GET List Transactions for a Dispute](https://docs.mangopay.com/api-reference/transactions/list-transactions-dispute)
+
+## [3.46.1] - 2025-06-16
+
+### Added
+- [US and CA virtual accounts](https://docs.mangopay.com/release-notes/api/2025-06-12) for local pay-in collection 
+
+## [3.46.0] - 2025-06-10
+### Added 
+
+Endpoints for [new Reporting Service](https://docs.mangopay.com/release-notes/api/2025-06-05) feature: 
+- [POST Create a Report](https://docs.mangopay.com/api-reference/reporting/create-report)
+- [GET View a Report](https://docs.mangopay.com/api-reference/reporting/view-report)
+- [GET List all Reports](https://docs.mangopay.com/api-reference/reporting/list-reports)
+
+Webhook [event types](url) for new Reporting Service:
+- `REPORT_GENERATED`
+- `REPORT_FAILED`
+
+Support for [GET List Disputes for a PayIn](https://docs.mangopay.com/api-reference/disputes/list-disputes-payin) endpoint.
+
+## [3.45.1] - 2025-06-06
+### Added
+- Support for `RecipientScope` query parameter on [GET List Recipients for a User](https://docs.mangopay.com/api-reference/recipients/list-recipients-user)
+- [POST Validate the format of User data](https://docs.mangopay.com/api-reference/user-data-format/validate-user-data-format)
+
+### Fixed 
+- `Status` enum value on Identity Verification object changed from `OUTDATED` to `OUT_OF_DATE`
+
+## [3.45.0] - 2025-05-23
+### Added 
+
+Event types for [user account webhooks](https://docs.mangopay.com//webhooks/event-types#user-account), relevant to [SCA enrollment in user endpoints](https://docs.mangopay.com/guides/sca/users#user-status) and account closure:  
+- `USER_ACCOUNT_VALIDATION_ASKED`
+- `USER_ACCOUNT_ACTIVATED`
+- `USER_ACCOUNT_CLOSED`
+
+Event types for [instant and quoted FX conversions](https://docs.mangopay.com//webhooks/event-types#fx-conversions): 
+- `INSTANT_CONVERSION_CREATED`
+- `INSTANT_CONVERSION_SUCCEEDED`
+- `INSTANT_CONVERSION_FAILED`
+- `QUOTED_CONVERSION_CREATED`
+- `QUOTED_CONVERSION_SUCCEEDED`
+- `QUOTED_CONVERSION_FAILED`
+
+Support for [30-day deposit preauthorization](https://docs.mangopay.com/guides/payment-methods/card/deposit-preauthorization) features:
+- [POST Create a Deposit Preauthorized PayIn prior to complement](https://docs.mangopay.com/api-reference/deposit-preauthorizations/create-deposit-preauthorized-payin-prior-to-complement)
+- [POST Create a Deposit Preauthorized PayIn complement](https://docs.mangopay.com/api-reference/deposit-preauthorizations/create-deposit-preauthorized-payin-complement)
+- `NO_SHOW_REQUESTED` on `updateDeposit` method for [PUT Cancel a Deposit Preauthorization or request a no-show](https://docs.mangopay.com/api-reference/deposit-preauthorizations/cancel-deposit-preauthorization-request-no-show)
+- [GET View a PayIn (Deposit Preauthorized Card](https://docs.mangopay.com/api-reference/deposit-preauthorizations/view-payin-deposit-preauthorized)
+- [GET List Transactions for a Deposit Preauthorization](https://docs.mangopay.com/api-reference/transactions/list-transactions-deposit-preauthorization)
+
+### Fixed 
+
+- Regression on User-Agent header SDK version number
+
+## [3.44.0] - 2025-05-14
+### Added and refined
+
+#### Hosted KYC/KYB endpoints
+
+The following endpoints have been refined following the beta phase, and are now generally available: 
+- [POST Create an IDV Session](https://docs.mangopay.com/api-reference/idv-sessions/create-idv-session) (no changes)
+- [GET View an IDV Session](https://docs.mangopay.com/api-reference/idv-sessions/view-idv-session) (includes `Checks` in response)
+- [GET List IDV Sessions for a User](https://docs.mangopay.com/api-reference/idv-sessions/list-idv-sessions-user) (new endpoint)
+
+The previously available endpoint GET View Checks for an IDV Session has been removed (as Checks were integrated into the GET by ID). 
+
+See the [guide](https://docs.mangopay.com/guides/users/verification/hosted) for more details.
+
+#### Recipients
+
+The `Country` property has been added to [Recipients](https://docs.mangopay.com/guides/sca/recipients), as a required query parameter on [GET View the schema for a Recipient](https://docs.mangopay.com/api-reference/recipients/view-recipient-schema) and as a required body parameter on [POST Validate data for a Recipient](https://docs.mangopay.com/api-reference/recipients/validate-recipient-data) and [POST Create a Recipient](https://docs.mangopay.com/api-reference/recipients/create-recipient).
+
+### Added 
+
+- [GET List Deposit Preauthorizations for a Card](https://docs.mangopay.com/api-reference/deposit-preauthorizations/list-deposit-preauthorizations-card)
+- [GET List Deposit Preauthorizations for a User](https://docs.mangopay.com/api-reference/deposit-preauthorizations/list-deposit-preauthorizations-user)
+
 ## [3.43.0] - 2025-04-29
 ### Added
 

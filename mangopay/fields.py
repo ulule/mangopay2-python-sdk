@@ -12,7 +12,8 @@ from .utils import timestamp_from_datetime, timestamp_from_date, Money, DebitedB
     ScopeBlocked, BrowserInfo, Shipping, CurrentState, FallbackReason, InstantPayout, CountryAuthorizationData, \
     PayinsLinked, ConversionRate, CardInfo, LocalAccountDetails, InternationalAccountDetails, \
     VirtualAccountCapabilities, PaymentRef, PendingUserAction, LegalRepresentative, IndividualRecipient, \
-    BusinessRecipient, RecipientPropertySchema, IndividualRecipientPropertySchema, BusinessRecipientPropertySchema
+    BusinessRecipient, RecipientPropertySchema, IndividualRecipientPropertySchema, BusinessRecipientPropertySchema, \
+    CompanyNumberValidation, ReportFilter, PayInIntentExternalData, PayInIntentBuyer, SupportedBank, VerificationOfPayee
 
 
 class FieldDescriptor(object):
@@ -968,7 +969,7 @@ class CardInfoField(Field):
 class LocalAccountDetailsField(Field):
     def python_value(self, value):
         if value is not None:
-            return LocalAccountDetails(address=value['Address'], account=value['Account'])
+            return LocalAccountDetails(address=value['Address'], account=value['Account'], bank_name=value['BankName'])
         return value
 
     def api_value(self, value):
@@ -977,7 +978,8 @@ class LocalAccountDetailsField(Field):
         if isinstance(value, LocalAccountDetails):
             value = {
                 'Address': value.address,
-                'Account': value.account
+                'Account': value.account,
+                'BankName': value.bank_name
             }
 
         return value
@@ -986,7 +988,8 @@ class LocalAccountDetailsField(Field):
 class InternationalAccountDetailsField(Field):
     def python_value(self, value):
         if value is not None:
-            return InternationalAccountDetails(address=value['Address'], account=value['Account'])
+            return InternationalAccountDetails(address=value['Address'], account=value['Account'],
+                                               bank_name=value['BankName'])
         return value
 
     def api_value(self, value):
@@ -995,7 +998,8 @@ class InternationalAccountDetailsField(Field):
         if isinstance(value, InternationalAccountDetails):
             value = {
                 'Address': value.address,
-                'Account': value.account
+                'Account': value.account,
+                'BankName': value.bank_name
             }
 
         return value
@@ -1178,5 +1182,164 @@ class BusinessRecipientPropertySchemaField(Field):
                 'BusinessName': value.business_name,
                 'Address': value.address
             }
+
+        return value
+
+
+class CompanyNumberValidationField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return CompanyNumberValidation(company_number=value.get('CompanyNumber', None),
+                                           country_code=value.get('CountryCode', None),
+                                           is_valid=value.get('IsValid', None),
+                                           validation_rules=value.get('ValidationRules', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(CompanyNumberValidationField, self).api_value(value)
+
+        if isinstance(value, CompanyNumberValidation):
+            value = {
+                'CompanyNumber': value.company_number,
+                'CountryCode': value.country_code,
+                'IsValid': value.is_valid,
+                'ValidationRules': value.validation_rules
+            }
+
+        return value
+
+
+class ReportFilterField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return ReportFilter(currency=value.get('Currency', None), user_id=value.get('UserId', None),
+                                wallet_id=value.get('WalletId', None), payment_method=value.get('PaymentMethod', None),
+                                status=value.get('Status', None), type=value.get('Type', None),
+                                intent_id=value.get('IntentId', None),
+                                external_provider_name=value.get('ExternalProviderName', None),
+                                scheduled=value.get('Scheduled', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(ReportFilterField, self).api_value(value)
+
+        if isinstance(value, ReportFilter):
+            result = {}
+            if value.currency is not None:
+                result['Currency'] = value.currency
+            if value.user_id is not None:
+                result['UserId'] = value.user_id
+            if value.wallet_id is not None:
+                result['WalletId'] = value.wallet_id
+            if value.payment_method is not None:
+                result['PaymentMethod'] = value.payment_method
+            if value.status is not None:
+                result['Status'] = value.status
+            if value.type is not None:
+                result['Type'] = value.type
+            if value.intent_id is not None:
+                result['IntentId'] = value.intent_id
+            if value.external_provider_name is not None:
+                result['ExternalProviderName'] = value.external_provider_name
+            if value.scheduled is not None:
+                result['Scheduled'] = value.scheduled
+            return result
+
+        return value
+
+
+class PayInIntentExternalDataField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PayInIntentExternalData(external_processing_date=value.get('ExternalProcessingDate', None),
+                                           external_provider_reference=value.get('ExternalProviderReference', None),
+                                           external_merchant_reference=value.get('ExternalMerchantReference', None),
+                                           external_provider_name=value.get('ExternalProviderName', None),
+                                           external_provider_payment_method=value.get('ExternalProviderPaymentMethod',
+                                                                                      None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(PayInIntentExternalDataField, self).api_value(value)
+
+        if isinstance(value, PayInIntentExternalData):
+            result = {}
+            if value.external_processing_date is not None:
+                result['ExternalProcessingDate'] = value.external_processing_date
+            if value.external_provider_reference is not None:
+                result['ExternalProviderReference'] = value.external_provider_reference
+            if value.external_merchant_reference is not None:
+                result['ExternalMerchantReference'] = value.external_merchant_reference
+            if value.external_provider_name is not None:
+                result['ExternalProviderName'] = value.external_provider_name
+            if value.external_provider_payment_method is not None:
+                result['ExternalProviderPaymentMethod'] = value.external_provider_payment_method
+            return result
+
+        return value
+
+
+class PayInIntentBuyerField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PayInIntentBuyer(id=value.get('Id', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(PayInIntentBuyerField, self).api_value(value)
+
+        if isinstance(value, PayInIntentBuyer):
+            result = {}
+            if value.id is not None:
+                result['Id'] = value.id
+            return result
+
+        return value
+
+
+class SupportedBanksField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return SupportedBank(countries=value.get('Countries', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(SupportedBanksField, self).api_value(value)
+
+        if isinstance(value, SupportedBank):
+            result = {}
+            if value.countries is not None:
+                result['Countries'] = value.countries
+            return result
+
+        return value
+
+
+class VerificationOfPayeeField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return VerificationOfPayee(recipient_verification_id=value.get('RecipientVerificationId', None),
+                                       recipient_verification_check=value.get('RecipientVerificationCheck', None),
+                                       recipient_verification_message=value.get('RecipientVerificationMessage', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(VerificationOfPayeeField, self).api_value(value)
+
+        if isinstance(value, VerificationOfPayee):
+            result = {}
+            if value.recipient_verification_id is not None:
+                result['RecipientVerificationId'] = value.recipient_verification_id
+            if value.recipient_verification_check is not None:
+                result['RecipientVerificationCheck'] = value.recipient_verification_check
+            if value.recipient_verification_message is not None:
+                result['RecipientVerificationMessage'] = value.recipient_verification_message
+            return result
 
         return value

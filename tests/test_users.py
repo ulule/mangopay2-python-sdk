@@ -8,8 +8,9 @@ import responses
 
 from mangopay.exceptions import APIError
 from mangopay.resources import (User, NaturalUser, Wallet,
-                                LegalUser, Transfer, Transaction, NaturalUserSca, LegalUserSca)
-from mangopay.utils import Money, Address
+                                LegalUser, Transfer, Transaction, NaturalUserSca, LegalUserSca,
+                                UserDataFormatValidation)
+from mangopay.utils import Money, Address, CompanyNumberValidation
 from tests import settings
 from tests.mocks import today, today_timestamp
 from tests.test_base import BaseTest, BaseTestLive
@@ -882,6 +883,7 @@ class PayOutsTestLive(BaseTestLive):
 
     def test_PayOut_GetRefunds(self):
         payout = BaseTestLive.get_johns_payout()
+        self.assertIsNotNone(payout.recipient_verification_of_payee)
 
         refunds = payout.get_refunds()
 
@@ -918,44 +920,8 @@ class PayInsTestLive(BaseTestLive):
 
         self.assertIsNotNone(regulatory)
 
-    def test_User_natural_terms_and_conditions(self):
-        user = BaseTestLive.get_john()
-        self.assertFalse(user.terms_and_conditions_accepted)
-
-        user.terms_and_conditions_accepted = True
-        user.save()
-
-        self.assertTrue(user.terms_and_conditions_accepted)
-        self.assertIsNotNone(user.terms_and_conditions_accepted_date)
-
-        user = BaseTestLive.get_john(recreate=True, terms=True)
-        self.assertTrue(user.terms_and_conditions_accepted)
-        self.assertIsNotNone(user.terms_and_conditions_accepted_date)
-
-    def test_User_legal_terms_and_conditions(self):
-        user = BaseTestLive.get_user_legal()
-        self.assertFalse(user.terms_and_conditions_accepted)
-
-        user.legal_representative_address = {
-                        "AddressLine1": "AddressLine1",
-                        "AddressLine2": "AddressLine2",
-                        "City": "City",
-                        "Region": "Region",
-                        "PostalCode": "11222",
-                        "Country": "FR"
-                    }
-        user.terms_and_conditions_accepted = True
-        user.save()
-
-        self.assertTrue(user.terms_and_conditions_accepted)
-        self.assertIsNotNone(user.terms_and_conditions_accepted_date)
-
-        user = BaseTestLive.get_user_legal(recreate=True, terms=True)
-        self.assertTrue(user.terms_and_conditions_accepted)
-        self.assertIsNotNone(user.terms_and_conditions_accepted_date)
-
     def test_Users_CloseNatural(self):
-        user = BaseTestLive.get_john_instance(True)
+        user = BaseTestLive.get_john_instance()
         NaturalUser(**user.save())
         NaturalUser.close(user.id)
         closed = NaturalUser.get(user.id)
@@ -964,7 +930,7 @@ class PayInsTestLive(BaseTestLive):
         self.assertEqual('CLOSED', closed.user_status)
 
     def test_Users_CloseLegal(self):
-        user = BaseTestLive.get_user_legal_instance(True)
+        user = BaseTestLive.get_user_legal_instance()
         LegalUser(**user.save())
         LegalUser.close(user.id)
         closed = LegalUser.get(user.id)
@@ -973,7 +939,7 @@ class PayInsTestLive(BaseTestLive):
         self.assertEqual('CLOSED', closed.user_status)
 
     def test_Users_CloseNaturalSca(self):
-        user = BaseTestLive.get_john_sca_payer_instance(True)
+        user = BaseTestLive.get_john_sca_payer_instance()
         NaturalUserSca(**user.save())
         NaturalUserSca.close(user.id)
         closed = NaturalUserSca.get(user.id)
@@ -982,7 +948,7 @@ class PayInsTestLive(BaseTestLive):
         self.assertEqual('CLOSED', closed.user_status)
 
     def test_Users_CloseLegalSca(self):
-        user = BaseTestLive.get_user_legal_sca_payer_instance(True)
+        user = BaseTestLive.get_user_legal_sca_payer_instance()
         LegalUserSca(**user.save())
         LegalUserSca.close(user.id)
         closed = LegalUserSca.get(user.id)
@@ -1000,3 +966,15 @@ class PayInsTestLive(BaseTestLive):
             self.assertTrue('PendingUserAction RedirectUrl' in ex.headers.get('www-authenticate'))
         except Exception as ex:
             self.assertTrue('PendingUserAction RedirectUrl' in ex.headers.get('www-authenticate'))
+
+    def test_validate_user_data_format(self):
+        validation = UserDataFormatValidation()
+        validation.company_number = CompanyNumberValidation(company_number='AB123456', country_code='IT')
+        result = validation.save()
+        self.assertIsNotNone(result['company_number'])
+
+        try:
+            validation.company_number = CompanyNumberValidation(company_number='123')
+            validation.save()
+        except APIError as e:
+            self.assertTrue("One or several required parameters are missing or incorrect" in e.content['Message'])

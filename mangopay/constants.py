@@ -2,7 +2,8 @@ from .utils import Choices
 
 USER_TYPE_CHOICES = Choices(
     ('NATURAL', 'natural', 'Natural user'),
-    ('LEGAL', 'legal', 'Legal user')
+    ('LEGAL', 'legal', 'Legal user'),
+    ('PLATFORM', 'platform', 'Platform user')
 )
 
 LEGAL_USER_TYPE_CHOICES = Choices(
@@ -35,7 +36,12 @@ PAYMENT_STATUS_CHOICES = Choices(
     ('WAITING', 'waiting', 'Waiting'),
     ('CANCELED', 'canceled', 'Canceled'),
     ('EXPIRED', 'expired', 'Expired'),
-    ('VALIDATED', 'validated', 'Validated')
+    ('VALIDATED', 'validated', 'Validated'),
+    ('CANCEL_REQUESTED', 'cancel_requested', 'Cancel Requested'),
+    ('TO_BE_COMPLETED', 'to_be_completed', 'To Be Completed'),
+    ('NO_SHOW_REQUESTED', 'no_show_requested', 'No Show Requested'),
+    ('NO_SHOW', 'no_show', 'No Show'),
+    ('FAILED', 'failed', 'Failed')
 )
 
 VALIDITY_CHOICES = Choices(
@@ -173,6 +179,10 @@ EVENT_TYPE_CHOICES = Choices(
     ('UBO_DECLARATION_INCOMPLETE', 'ubo_declaration_incomplete', 'Ubo Declaration Incomplete'),
     ('USER_KYC_LIGHT', 'user_kyc_light', 'User Kyc Light'),
 
+    ('SCA_ENROLLMENT_SUCCEEDED', 'sca_enrollment_succeeded', 'Sca enrollment succeeded'),
+    ('SCA_ENROLLMENT_FAILED', 'sca_enrollment_failed', 'Sca enrollment failed'),
+    ('SCA_ENROLLMENT_EXPIRED', 'sca_enrollment_expired', 'Sca enrollment expired'),
+
     ('VIRTUAL_ACCOUNT_ACTIVE', 'virtual_account_active', 'Virtual Account Active'),
     ('VIRTUAL_ACCOUNT_BLOCKED', 'virtual_account_blocked', 'Virtual Account Blocked'),
     ('VIRTUAL_ACCOUNT_CLOSED', 'virtual_account_closed', 'Virtual Account Closed'),
@@ -200,10 +210,46 @@ EVENT_TYPE_CHOICES = Choices(
     ('IDENTITY_VERIFICATION_INCONCLUSIVE', 'identity_verification_inconclusive', 'Identity Verification Inconclusive'),
     ('IDENTITY_VERIFICATION_OUTDATED', 'identity_verification_outdated', 'Identity Verification Outdated'),
     ('IDENTITY_VERIFICATION_TIMEOUT', 'identity_verification_timeout', 'Identity Verification Timeout'),
+    ('IDENTITY_VERIFICATION_PENDING', 'identity_verification_pending', 'Identity Verification Pending'),
 
     ('RECIPIENT_ACTIVE', 'recipient_active', 'Recipient Active'),
     ('RECIPIENT_CANCELED', 'recipient_canceled', 'Recipient Canceled'),
     ('RECIPIENT_DEACTIVATED', 'recipient_deactivated', 'Recipient Deactivated'),
+
+    ('USER_ACCOUNT_VALIDATION_ASKED', 'user_account_validation_asked', 'User Account Validation Asked'),
+    ('USER_ACCOUNT_ACTIVATED', 'user_account_activated', 'User Account Activated'),
+    ('USER_ACCOUNT_CLOSED', 'user_account_closed', 'User Account Closed'),
+
+    ('INSTANT_CONVERSION_CREATED', 'instant_conversion_created', 'Instant Conversion Created'),
+    ('INSTANT_CONVERSION_SUCCEEDED', 'instant_conversion_succeeded', 'Instant Conversion Succeeded'),
+    ('INSTANT_CONVERSION_FAILED', 'instant_conversion_failed', 'Instant Conversion Failed'),
+    ('QUOTED_CONVERSION_CREATED', 'quoted_conversion_created', 'Quoted Conversion Created'),
+    ('QUOTED_CONVERSION_SUCCEEDED', 'quoted_conversion_succeeded', 'Quoted Conversion Succeeded'),
+    ('QUOTED_CONVERSION_FAILED', 'quoted_conversion_failed', 'Quoted Conversion Failed'),
+
+    ('USER_CATEGORY_UPDATED_TO_OWNER', 'user_category_updated_to_owner', 'User category updated to owner'),
+    ('USER_CATEGORY_UPDATED_TO_PAYER', 'user_category_updated_to_payer', 'User category updated to payer'),
+    ('USER_CATEGORY_UPDATED_TO_PLATFORM', 'user_category_updated_to_platform', 'User category updated to platform'),
+
+    ('REPORT_GENERATED', 'report_generated', 'Report Generated'),
+    ('REPORT_FAILED', 'report_failed', 'Report Failed'),
+
+    ('INTENT_AUTHORIZED', 'intent_authorized', 'Intent Authorized'),
+    ('INTENT_CAPTURED', 'intent_captured', 'Intent Captured'),
+    ('INTENT_REFUNDED', 'intent_refunded', 'Intent Refunded'),
+    ('INTENT_REFUND_REVERSED', 'intent_refund_reversed', 'Intent Refund Reversed'),
+    ('INTENT_DISPUTE_CREATED', 'intent_dispute_created', 'Intent Dispute Created'),
+    ('INTENT_DISPUTE_DEFENDED', 'intent_dispute_defended', 'Intent Dispute Defended'),
+    ('INTENT_DISPUTE_WON', 'intent_dispute_won', 'Intent Dispute Won'),
+    ('INTENT_DISPUTE_LOST', 'intent_dispute_lost', 'Intent Dispute Lost'),
+    ('INTENT_SETTLED_NOT_PAID', 'intent_settled_not_paid', 'Intent Settled Not Paid'),
+    ('INTENT_PAID', 'intent_paid', 'Intent Paid'),
+
+    ('SPLIT_CREATED', 'split_created', 'Split Created'),
+    ('SPLIT_PENDING_FUNDS_RECEPTION', 'split_pending_funds_reception', 'Split Pending Funds Reception'),
+    ('SPLIT_AVAILABLE', 'split_available', 'Split Available'),
+    ('SPLIT_REJECTED', 'split_rejected', 'Split Rejected'),
+    ('SPLIT_REVERSED', 'split_reversed', 'Split Reversed')
 )
 
 NOTIFICATION_STATUS_CHOICES = Choices(
@@ -323,6 +369,7 @@ PAYIN_PAYMENT_TYPE = Choices(
     ("IDEAL", "ideal", "Ideal"),
     ("GIROPAY", "giropay", "Giropay"),
     ("BCMC", "bancontact", "Bancontact"),
+    ("BIZUM", "bizum", "Bizum"),
     ("SWISH", "swish", "Swish"),
     ("TWINT", "twint", "Twint")
 )
