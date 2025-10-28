@@ -15,17 +15,6 @@ import six
 from .compat import python_2_unicode_compatible
 from .exceptions import CurrencyMismatch
 
-if six.PY3:
-    from urllib import request
-
-    orig = request.URLopener.open_https
-    request.URLopener.open_https = orig  # uncomment this line back and forth
-elif six.PY2:
-    import urllib
-
-    orig = urllib.URLopener.open_https
-    urllib.URLopener.open_https = orig
-
 
 class AliasProperty(object):
     def __init__(self, name):
