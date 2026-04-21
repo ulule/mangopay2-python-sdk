@@ -2841,6 +2841,7 @@ class Recipient(BaseModel):
     currency = CharField(api_name='Currency', required=True)
     country = CharField(api_name='Country')
     recipient_scope = CharField(api_name='RecipientScope')
+    tag = CharField(api_name='Tag')
     user_id = CharField(api_name='UserId')
     individual_recipient = IndividualRecipientField(api_name='IndividualRecipient')
     business_recipient = BusinessRecipientField(api_name='BusinessRecipient')
@@ -2861,11 +2862,11 @@ class Recipient(BaseModel):
             'VALIDATE': '/users/%(user_id)s/recipients/validate'
         }
 
-    def create(self, user_id, idempotency_key=None, **kwargs):
+    def create(self, user_id, handler=None, idempotency_key=None, **kwargs):
         path_params = {'user_id': user_id}
         insert = InsertQuery(self, idempotency_key, path_params, **kwargs)
         insert.insert_query = self.get_field_dict()
-        return insert.execute()
+        return insert.execute(handler=handler)
 
     def validate(self, user_id, idempotency_key=None, **kwargs):
         path_params = {'user_id': user_id}
