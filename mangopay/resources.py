@@ -2843,6 +2843,7 @@ class Recipient(BaseModel):
     recipient_scope = CharField(api_name='RecipientScope')
     tag = CharField(api_name='Tag')
     user_id = CharField(api_name='UserId')
+    sca_context = CharField(api_name='ScaContext')
     individual_recipient = IndividualRecipientField(api_name='IndividualRecipient')
     business_recipient = BusinessRecipientField(api_name='BusinessRecipient')
     local_bank_transfer = DictField(api_name='LocalBankTransfer')
