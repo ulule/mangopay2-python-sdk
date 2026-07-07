@@ -941,7 +941,7 @@ class PayinsLinked(object):
 
 class LineItem(object):
     def __init__(self, name=None, quantity=None, unit_amount=None, tax_amount=None, description=None, category=None,
-                 sku=None):
+                 sku=None, discount=None):
         self.name = name
         self.quantity = quantity
         self.unit_amount = unit_amount
@@ -949,10 +949,11 @@ class LineItem(object):
         self.description = description
         self.category = category
         self.sku = sku
+        self.discount = discount
 
     def __str__(self):
-        return 'LineItem: %s %s %s %s %s %s %s' % \
-            (self.name, self.quantity, self.unit_amount, self.tax_amount, self.description, self.category, self.sku)
+        return 'LineItem: %s %s %s %s %s %s %s %s' % \
+            (self.name, self.quantity, self.unit_amount, self.tax_amount, self.description, self.category, self.sku, self.discount)
 
     def to_api_json(self):
         return {
@@ -962,7 +963,8 @@ class LineItem(object):
             "TaxAmount": self.tax_amount,
             "Description": self.description,
             "Category": self.category,
-            "Sku": self.sku
+            "Sku": self.sku,
+            "Discount": self.discount
         }
 
 
@@ -1326,8 +1328,7 @@ class CompanyNumberValidation(object):
 @add_camelcase_aliases
 class ReportFilter(object):
     def __init__(self, currency=None, user_id=None, wallet_id=None, payment_method=None, status=None, type=None,
-                 intent_id=None,
-                 external_provider_name=None, scheduled=None):
+                 intent_id=None, external_provider_name=None, scheduled=None, settlement_id=None):
         self.currency = currency
         self.user_id = user_id
         self.wallet_id = wallet_id
@@ -1337,11 +1338,12 @@ class ReportFilter(object):
         self.intent_id = intent_id
         self.external_provider_name = external_provider_name
         self.scheduled = scheduled
+        self.settlement_id = settlement_id
 
     def __str__(self):
-        return 'ReportFilter: %s, %s, %s, %s, %s, %s, %s, %s, %s' % \
+        return 'ReportFilter: %s, %s, %s, %s, %s, %s, %s, %s, %s %s' % \
             (self.currency, self.user_id, self.wallet_id, self.payment_method, self.status, self.type, self.intent_id,
-             self.external_provider_name, self.scheduled)
+             self.external_provider_name, self.scheduled, self.settlement_id)
 
     def __eq__(self, other):
         if isinstance(other, ReportFilter):
@@ -1353,7 +1355,8 @@ class ReportFilter(object):
                     (self.type == other.type) and
                     (self.intent_id == other.intent_id) and
                     (self.external_provider_name == other.external_provider_name) and
-                    (self.scheduled == other.scheduled))
+                    (self.scheduled == other.scheduled) and
+                    (self.settlement_id == other.settlement_id))
             return stat
         return False
 
@@ -1367,7 +1370,8 @@ class ReportFilter(object):
             "Type": self.type,
             "IntentId": self.intent_id,
             "ExternalProviderName": self.external_provider_name,
-            "Scheduled": self.scheduled
+            "Scheduled": self.scheduled,
+            "SettlementId": self.settlement_id
         }
 
 
@@ -1431,7 +1435,7 @@ class PayInIntentLineItem(object):
     def __init__(self, id=None, seller=None, sku=None, name=None, description=None, quantity=None, unit_amount=None, amount=None,
                  tax_amount=None, discount_amount=None, category=None, shipping_address=None,
                  total_line_item_amount=None, canceled_amount=None, captured_amount=None, refunded_amount=None,
-                 disputed_amount=None, split_amount=None):
+                 disputed_amount=None, split_amount=None, unfunded_seller_amount=None):
         self.id = id
         self.seller = seller
         self.sku = sku
@@ -1450,12 +1454,14 @@ class PayInIntentLineItem(object):
         self.refunded_amount = refunded_amount
         self.disputed_amount = disputed_amount
         self.split_amount = split_amount
+        self.unfunded_seller_amount = unfunded_seller_amount
 
     def __str__(self):
-        return 'PayInIntentLineItem: %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % \
+        return 'PayInIntentLineItem: %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s' % \
             (self.id, self.seller, self.sku, self.name, self.description, self.quantity, self.unit_amount, self.amount,
              self.tax_amount, self.discount_amount, self.category, self.shipping_address, self.total_line_item_amount,
-             self.canceled_amount, self.captured_amount, self.refunded_amount, self.disputed_amount, self.split_amount)
+             self.canceled_amount, self.captured_amount, self.refunded_amount, self.disputed_amount, self.split_amount,
+             self.unfunded_seller_amount)
 
     def to_api_json(self):
         return {
@@ -1476,7 +1482,8 @@ class PayInIntentLineItem(object):
             "CapturedAmount": self.captured_amount,
             "RefundedAmount": self.refunded_amount,
             "DisputedAmount": self.disputed_amount,
-            "SplitAmount": self.split_amount
+            "SplitAmount": self.split_amount,
+            "UnfundedSellerAmount": self.unfunded_seller_amount
         }
 
 
@@ -1568,4 +1575,172 @@ class VerificationOfPayee(object):
             "RecipientVerificationId": self.recipient_verification_id,
             "RecipientVerificationCheck": self.recipient_verification_check,
             "RecipientVerificationMessage": self.recipient_verification_message
+        }
+
+
+@add_camelcase_aliases
+class CustomFees(object):
+    def __init__(self, amount=None, currency=None,
+                 type=None, value=None):
+        self.currency = currency
+        self.type = type
+
+        if amount is not None:
+            self.amount = decimal.Decimal(amount)
+        else:
+            self.amount = None
+
+        if value is not None:
+            self.value = decimal.Decimal(value)
+        else:
+            self.value = None
+
+    def __str__(self):
+        return force_text("CustomFees: {:,.2f} {} {} {:,.2f}".format(
+            self.amount if self.amount is not None else 0.0,
+            self.currency or "",
+            self.type or "",
+            self.value if self.value is not None else 0.0)
+        )
+
+    def to_api_json(self):
+        return {
+            "Amount": self.amount,
+            "Currency": self.currency,
+            "Type": self.type,
+            "Value": self.value
+        }
+
+
+@add_camelcase_aliases
+class MarginsResponse(object):
+    def __init__(self, mangopay=None, user=None):
+        self.mangopay = mangopay
+        self.user = user
+
+    def __str__(self):
+        return 'MarginsResponse: %s %s' % self.mangopay, self.user
+
+    def to_api_json(self):
+        return {
+            "Mangopay": self.mangopay,
+            "User": self.user
+        }
+
+
+@add_camelcase_aliases
+class UserMargin(object):
+    def __init__(self, type=None, value=None):
+        self.type = type
+
+        if value is not None:
+            self.value = decimal.Decimal(value)
+        else:
+            self.value = None
+
+    def __str__(self):
+        return force_text(
+            "UserMargin: {} {:,.2f}".format(
+                self.type or "",
+                self.value if self.value is not None else 0.0)
+        )
+
+    def to_api_json(self):
+        return {
+            "Type": self.type,
+            "Value": self.value
+        }
+
+
+@add_camelcase_aliases
+class ConsentScope(object):
+    def __init__(self, contact_information_update=None, recipient_registration=None,
+                 transfer=None, view_account_information=None):
+        self.contact_information_update = contact_information_update
+        self.recipient_registration = recipient_registration
+        self.transfer = transfer
+        self.view_account_information = view_account_information
+
+    def __str__(self):
+        return ('ConsentScope: %s %s %s %s' % self.contact_information_update, self.recipient_registration,
+                self.transfer, self.view_account_information)
+
+    def to_api_json(self):
+        return {
+            "ContactInformationUpdate": self.contact_information_update,
+            "RecipientRegistration": self.recipient_registration,
+            "Transfer": self.transfer,
+            "ViewAccountInformation": self.view_account_information
+        }
+
+
+@add_camelcase_aliases
+class PayInIntentRefund(object):
+    def __init__(self, id=None):
+        self.id = id
+
+    def __str__(self):
+        return ('PayInIntentRefund: %s' % self.id)
+
+    def to_api_json(self):
+        return {
+            "Id": self.id
+        }
+
+
+@add_camelcase_aliases
+class PayInIntentCapture(object):
+    def __init__(self, id=None):
+        self.id = id
+
+    def __str__(self):
+        return ('PayInIntentCapture: %s' % self.id)
+
+    def to_api_json(self):
+        return {
+            "Id": self.id
+        }
+
+
+@add_camelcase_aliases
+class PayInIntentDispute(object):
+    def __init__(self, id=None):
+        self.id = id
+
+    def __str__(self):
+        return ('PayInIntentDispute: %s' % self.id)
+
+    def to_api_json(self):
+        return {
+            "Id": self.id
+        }
+
+
+@add_camelcase_aliases
+class AuthenticationResult(object):
+    def __init__(self, authentication_type=None):
+        self.authentication_type = authentication_type
+
+    def __str__(self):
+        return 'AuthenticationResult: %s' % self.authentication_type
+
+    def to_api_json(self):
+        return {
+            "AuthenticationType": self.authentication_type
+        }
+
+
+@add_camelcase_aliases
+class FlowDescriptor(object):
+    def __init__(self, flow_id=None, beneficiaries=None):
+        self.flow_id = flow_id
+        self.beneficiaries = beneficiaries
+
+    def __str__(self):
+        return 'FlowDescriptor: %s %s' % (self.flow_id, self.beneficiaries)
+
+    def to_api_json(self):
+        return {
+            "FlowId": self.flow_id,
+            "Beneficiaries": self.beneficiaries
         }

@@ -102,7 +102,7 @@ DOCUMENTS_STATUS_CHOICES = Choices(
     ('VALIDATION_ASKED', 'validation_asked', 'Validation asked'),
     ('VALIDATED', 'validated', 'Validated'),
     ('REFUSED', 'refused', 'Refused'),
-    ('OUT_OF_DATE', 'out_of_date', 'Out of date'),
+    ('OUT_OF_DATE', 'out_of_date', 'Out of Date')
 )
 
 EVENT_TYPE_CHOICES = Choices(
@@ -136,7 +136,6 @@ EVENT_TYPE_CHOICES = Choices(
     ('MANDATE_ACTIVATED', 'mandate_activated', 'Mandate activated'),
     ('MANDATE_SUBMITTED', 'mandate_submitted', 'Mandate submitted'),
     ('MANDATE_EXPIRED', 'mandate_expired', 'Mandate expired'),
-    ('USER_KYC_REGULAR', 'user_kyc_regular', 'User kyc regular'),
     ('USER_INFLOWS_BLOCKED', 'user_inflows_blocked', 'User inflows blocked'),
     ('USER_INFLOWS_UNBLOCKED', 'user_inflows_unblocked', 'User inflows unblocked'),
     ('USER_OUTFLOWS_BLOCKED', 'user_outflows_blocked', 'User outflows blocked'),
@@ -178,10 +177,23 @@ EVENT_TYPE_CHOICES = Choices(
     ('UBO_DECLARATION_VALIDATED', 'ubo_declaration_validated', 'Ubo Declaration Validated'),
     ('UBO_DECLARATION_INCOMPLETE', 'ubo_declaration_incomplete', 'Ubo Declaration Incomplete'),
     ('USER_KYC_LIGHT', 'user_kyc_light', 'User Kyc Light'),
+    ('USER_KYC_REGULAR', 'user_kyc_regular', 'User kyc regular'),
+    ('USER_KYC_RENEWAL_REQUIRED', 'user_kyc_renewal_required', 'User KYC Renewal Required'),
+    ('USER_KYC_RENEWED', 'user_kyc_renewed', 'User KYC Renewed'),
 
     ('SCA_ENROLLMENT_SUCCEEDED', 'sca_enrollment_succeeded', 'Sca enrollment succeeded'),
     ('SCA_ENROLLMENT_FAILED', 'sca_enrollment_failed', 'Sca enrollment failed'),
     ('SCA_ENROLLMENT_EXPIRED', 'sca_enrollment_expired', 'Sca enrollment expired'),
+    ('SCA_CONTACT_INFORMATION_UPDATE_CONSENT_GIVEN', 'sca_contact_information_update_consent_given', 'Sca Contact Information Update Consent Given'),
+    ('SCA_CONTACT_INFORMATION_UPDATE_CONSENT_REVOKED', 'sca_contact_information_update_consent_revoked', 'Sca Contact Information Update Consent Revoked'),
+    ('SCA_TRANSFER_CONSENT_GIVEN', 'sca_transfer_consent_given', 'Sca Transfer Consent Given'),
+    ('SCA_TRANSFER_CONSENT_REVOKED', 'sca_transfer_consent_revoked', 'Sca Transfer Consent Revoked'),
+    ('SCA_RECIPIENT_REGISTRATION_CONSENT_GIVEN', 'sca_recipient_registration_consent_given', 'Sca Recipient Registration Consent Given'),
+    ('SCA_RECIPIENT_REGISTRATION_CONSENT_REVOKED', 'sca_recipient_registration_consent_revoked', 'Sca Recipient Registration Consent Revoked'),
+    ('SCA_VIEW_ACCOUNT_INFORMATION_CONSENT_GIVEN', 'sca_view_account_information_consent_given', 'Sca View Account Information Consent Given'),
+    ('SCA_VIEW_ACCOUNT_INFORMATION_CONSENT_REVOKED', 'sca_view_account_information_consent_revoked', 'Sca View Account Information Consent Revoked'),
+    ('SCA_EMAIL_VERIFIED', 'sca_email_verified', 'Sca Email Verified'),
+    ('SCA_PHONE_NUMBER_VERIFIED', 'sca_phone_number_verified', 'Sca Phone Number Verified'),
 
     ('VIRTUAL_ACCOUNT_ACTIVE', 'virtual_account_active', 'Virtual Account Active'),
     ('VIRTUAL_ACCOUNT_BLOCKED', 'virtual_account_blocked', 'Virtual Account Blocked'),
@@ -377,6 +389,8 @@ PAYIN_PAYMENT_TYPE = Choices(
 RECURRING_PAYIN_REGISTRATION_PAYMENT_TYPE = Choices(
     ("CARD_DIRECT", "card_direct", "Card Direct"),
     ("PAYPAL", "paypal", "PayPal"),
+    ("APPLEPAY", "applepay", "ApplePay"),
+    ("GOOGLEPAY", "googlepay", "GooglePay")
 )
 
 CARD_STATUS_CHOICES = Choices(

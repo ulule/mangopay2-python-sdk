@@ -13,7 +13,9 @@ from .utils import timestamp_from_datetime, timestamp_from_date, Money, DebitedB
     PayinsLinked, ConversionRate, CardInfo, LocalAccountDetails, InternationalAccountDetails, \
     VirtualAccountCapabilities, PaymentRef, PendingUserAction, LegalRepresentative, IndividualRecipient, \
     BusinessRecipient, RecipientPropertySchema, IndividualRecipientPropertySchema, BusinessRecipientPropertySchema, \
-    CompanyNumberValidation, ReportFilter, PayInIntentExternalData, PayInIntentBuyer, SupportedBank, VerificationOfPayee
+    CompanyNumberValidation, ReportFilter, PayInIntentExternalData, PayInIntentBuyer, SupportedBank, \
+    VerificationOfPayee, PayInIntentRefund, PayInIntentCapture, PayInIntentDispute, CustomFees, MarginsResponse, \
+    UserMargin, ConsentScope, AuthenticationResult, FlowDescriptor
 
 
 class FieldDescriptor(object):
@@ -1218,7 +1220,8 @@ class ReportFilterField(Field):
                                 status=value.get('Status', None), type=value.get('Type', None),
                                 intent_id=value.get('IntentId', None),
                                 external_provider_name=value.get('ExternalProviderName', None),
-                                scheduled=value.get('Scheduled', None))
+                                scheduled=value.get('Scheduled', None),
+                                settlement_id=value.get('SettlementId', None))
 
         return value
 
@@ -1245,6 +1248,8 @@ class ReportFilterField(Field):
                 result['ExternalProviderName'] = value.external_provider_name
             if value.scheduled is not None:
                 result['Scheduled'] = value.scheduled
+            if value.settlement_id is not None:
+                result['SettlementId'] = value.settlement_id
             return result
 
         return value
@@ -1340,6 +1345,203 @@ class VerificationOfPayeeField(Field):
                 result['RecipientVerificationCheck'] = value.recipient_verification_check
             if value.recipient_verification_message is not None:
                 result['RecipientVerificationMessage'] = value.recipient_verification_message
+            return result
+
+        return value
+
+
+class PayInIntentRefundField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PayInIntentRefund(id=value.get('Id', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(PayInIntentRefundField, self).api_value(value)
+
+        if isinstance(value, PayInIntentRefund):
+            result = {}
+            if value.id is not None:
+                result['Id'] = value.id
+            return result
+
+        return value
+
+
+class PayInIntentCaptureField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PayInIntentCapture(id=value.get('Id', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(PayInIntentCaptureField, self).api_value(value)
+
+        if isinstance(value, PayInIntentCapture):
+            result = {}
+            if value.id is not None:
+                result['Id'] = value.id
+            return result
+
+        return value
+
+
+class PayInIntentDisputeField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return PayInIntentDispute(id=value.get('Id', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(PayInIntentDisputeField, self).api_value(value)
+
+        if isinstance(value, PayInIntentDispute):
+            result = {}
+            if value.id is not None:
+                result['Id'] = value.id
+            return result
+
+        return value
+
+
+class CustomFeesField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return CustomFees(amount=value.get('Amount', None),
+                              currency=value.get('Currency', None),
+                              type=value.get('Type', None),
+                              value=value.get('Value', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(CustomFeesField, self).api_value(value)
+
+        if isinstance(value, CustomFees):
+            result = {}
+            if value.amount is not None:
+                result['Amount'] = value.amount
+            if value.currency is not None:
+                result['Currency'] = value.currency
+            if value.type is not None:
+                result['Type'] = value.type
+            if value.value is not None:
+                result['Value'] = value.value
+            return result
+
+        return value
+
+
+class MarginsResponseField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return MarginsResponse(mangopay=value.get('Mangopay', None),
+                                   user=value.get('User', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(MarginsResponseField, self).api_value(value)
+
+        if isinstance(value, MarginsResponse):
+            result = {}
+            if value.mangopay is not None:
+                result['Mangopay'] = value.mangopay
+            if value.user is not None:
+                result['User'] = value.user
+            return result
+
+        return value
+
+
+class UserMarginField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return UserMargin(type=value.get('Type', None),
+                              value=value.get('Value', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(UserMarginField, self).api_value(value)
+
+        if isinstance(value, UserMargin):
+            result = {}
+            if value.type is not None:
+                result['Type'] = value.type
+            if value.value is not None:
+                result['Value'] = value.value
+            return result
+
+        return value
+
+
+class ConsentScopeField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return ConsentScope(contact_information_update=value.get('ContactInformationUpdate', None),
+                                recipient_registration=value.get('RecipientRegistration', None),
+                                transfer=value.get('Transfer', None),
+                                view_account_information=value.get('ViewAccountInformation', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(ConsentScopeField, self).api_value(value)
+
+        if isinstance(value, ConsentScope):
+            result = {}
+            if value.contact_information_update is not None:
+                result['ContactInformationUpdate'] = value.contact_information_update
+            if value.recipient_registration is not None:
+                result['RecipientRegistration'] = value.recipient_registration
+            if value.transfer is not None:
+                result['Transfer'] = value.transfer
+            if value.view_account_information is not None:
+                result['ViewAccountInformation'] = value.view_account_information
+            return result
+
+        return value
+
+
+class AuthenticationResultField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return AuthenticationResult(authentication_type=value.get('AuthenticationType', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(AuthenticationResultField, self).api_value(value)
+
+        if isinstance(value, AuthenticationResult):
+            result = {}
+            if value.authentication_type is not None:
+                result['AuthenticationType'] = value.authentication_type
+            return result
+
+        return value
+
+
+class FlowDescriptorField(Field):
+    def python_value(self, value):
+        if value is not None:
+            return FlowDescriptor(flow_id=value.get('FlowId', None), beneficiaries=value.get('Beneficiaries', None))
+
+        return value
+
+    def api_value(self, value):
+        value = super(FlowDescriptorField, self).api_value(value)
+
+        if isinstance(value, FlowDescriptor):
+            result = {}
+            if value.flow_id is not None:
+                result['FlowId'] = value.flow_id
+            if value.beneficiaries is not None:
+                result['Beneficiaries'] = value.beneficiaries
             return result
 
         return value
